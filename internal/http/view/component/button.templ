@@ -1,0 +1,79 @@
+package component
+
+// ButtonVariant énumère les variantes visuelles du bouton
+// (cf. Design system Edecàn/components/buttons/Button.jsx).
+type ButtonVariant string
+
+const (
+	ButtonPrimary       ButtonVariant = "primary"
+	ButtonSecondary     ButtonVariant = "secondary"
+	ButtonGhost         ButtonVariant = "ghost"
+	ButtonDanger        ButtonVariant = "danger"
+	ButtonPrimarySubtle ButtonVariant = "primary-subtle"
+)
+
+// ButtonSize énumère les tailles disponibles.
+type ButtonSize string
+
+const (
+	ButtonSm ButtonSize = "sm"
+	ButtonMd ButtonSize = "md"
+	ButtonLg ButtonSize = "lg"
+)
+
+// ButtonProps configure Button. Le contenu (libellé + icônes) est fourni via
+// les enfants templ — voir l'usage dans la page de démo.
+type ButtonProps struct {
+	Variant   ButtonVariant
+	Size      ButtonSize
+	Type      string // button | submit | reset
+	Disabled  bool
+	Loading   bool
+	FullWidth bool
+}
+
+func (p ButtonProps) variant() ButtonVariant {
+	if p.Variant == "" {
+		return ButtonPrimary
+	}
+	return p.Variant
+}
+
+func (p ButtonProps) size() ButtonSize {
+	if p.Size == "" {
+		return ButtonMd
+	}
+	return p.Size
+}
+
+func (p ButtonProps) htmlType() string {
+	if p.Type == "" {
+		return "button"
+	}
+	return p.Type
+}
+
+// Button est le CTA principal d'edecàn — primaire, secondaire, ghost,
+// destructif (SPEC §UI/UX Considerations).
+templ Button(props ButtonProps) {
+	<button
+		type={ props.htmlType() }
+		class={
+			classes(
+				"edc-btn",
+				"edc-btn--"+string(props.variant()),
+				"edc-btn--"+string(props.size()),
+				ifClass(props.FullWidth, "edc-btn--full"),
+			),
+		}
+		disabled?={ props.Disabled || props.Loading }
+	>
+		if props.Loading {
+			<svg class="edc-btn__spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+				<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+			</svg>
+		} else {
+			{ children... }
+		}
+	</button>
+}

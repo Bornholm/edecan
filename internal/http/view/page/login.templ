@@ -1,0 +1,39 @@
+package page
+
+import (
+	"edecan/internal/http/view/component"
+	"edecan/internal/http/view/layout"
+)
+
+// Login affiche le choix de fournisseur d'identité OIDC, dans une carte
+// centrée reprenant l'identité visuelle de l'app (logo, fond sombre — cf.
+// maquette Design system Edecàn/ui_kits/edecan/index.html).
+templ Login(idpNames []string, errorMessage string) {
+	@layout.Base("Connexion") {
+		<div class="edc-login">
+			<div class="edc-login__card">
+				<div class="edc-login__brand">
+					<span class="edc-login__logo">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+						</svg>
+					</span>
+					<span class="edc-login__name">edecán</span>
+				</div>
+				<p class="edc-login__subtitle">Connectez-vous pour accéder à votre support</p>
+				if errorMessage != "" {
+					@component.Toast(component.ToastProps{Variant: component.ToastError, Title: "Connexion impossible", Message: errorMessage})
+				}
+				<div class="edc-login__providers">
+					for _, name := range idpNames {
+						<form method="get" action={ templ.SafeURL("/auth/" + name + "/start") }>
+							@component.Button(component.ButtonProps{Variant: component.ButtonPrimary, Type: "submit", FullWidth: true}) {
+								Se connecter avec { name }
+							}
+						</form>
+					}
+				</div>
+			</div>
+		</div>
+	}
+}

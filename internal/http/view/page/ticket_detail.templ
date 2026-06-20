@@ -1,0 +1,294 @@
+package page
+
+import (
+	"strings"
+
+	"edecan/internal/core/model"
+	"edecan/internal/http/view/component"
+	"edecan/internal/http/view/layout"
+	"edecan/internal/http/view/markdown"
+)
+
+// CommentEntry est un commentaire bidirectionnel User ↔ Support
+// (SPEC §Tickets, point 22). Role est vide quand l'identité du posteur n'a
+// pas pu être déterminée (commentaire ajouté directement dans le backend,
+// hors edecán) — aucun badge n'est alors affiché plutôt que d'en deviner un.
+type CommentEntry struct {
+	Author      string
+	Body        string // Markdown
+	CreatedAt   string
+	Role        model.Role
+	Attachments []AttachmentEntry
+}
+
+func commentRoleBadgeVariant(role model.Role) component.BadgeVariant {
+	if role == model.RoleSupport {
+		return component.BadgeSupport
+	}
+	return component.BadgeUser
+}
+
+func commentRoleLabel(role model.Role) string {
+	if role == model.RoleSupport {
+		return "Support"
+	}
+	return "User"
+}
+
+// commentAvatarClass colore l'avatar d'un commentaire par rôle (indigo User,
+// bleu Support — cf. maquette), et non par hash de nom comme les autres
+// avatars : faute de rôle connu (commentaire ajouté hors edecán), on retombe
+// sur la classe neutre et une couleur dérivée du nom.
+func commentAvatarClass(role model.Role) string {
+	switch role {
+	case model.RoleUser:
+		return "edc-ticket-comment__avatar edc-ticket-comment__avatar--user"
+	case model.RoleSupport:
+		return "edc-ticket-comment__avatar edc-ticket-comment__avatar--support"
+	default:
+		return "edc-ticket-comment__avatar"
+	}
+}
+
+func renderTicketBody(content string) string {
+	html, err := markdown.ToHTML(content)
+	if err != nil {
+		return content
+	}
+	return html
+}
+
+func ticketBadgeVariant(status model.TicketStatus) component.BadgeVariant {
+	if status == model.TicketStatusClosed {
+		return component.BadgeClosed
+	}
+	return component.BadgeOpen
+}
+
+var ticketCommentAvatarColors = []string{"#6366F1", "#8B5CF6", "#06B6D4", "#10B981", "#F59E0B"}
+
+// ticketCommentAvatarColor dérive une couleur stable à partir du nom — pas
+// d'illustration décorative, seuls les avatars portent de la couleur
+// (SPEC §VISUAL FOUNDATIONS : Images & illustrations).
+func ticketCommentAvatarColor(name string) string {
+	if name == "" {
+		return ticketCommentAvatarColors[0]
+	}
+	return ticketCommentAvatarColors[int(name[0])%len(ticketCommentAvatarColors)]
+}
+
+func ticketCommentInitials(name string) string {
+	if name == "" {
+		return "??"
+	}
+	runes := []rune(strings.ToUpper(name))
+	if len(runes) == 1 {
+		return string(runes[0])
+	}
+	return string(runes[:2])
+}
+
+// AttachmentEntry est une pièce jointe affichée dans la carte du corps du
+// ticket — Href pointe vers le proxy de téléchargement edecán (jamais
+// directement vers le backend), conformément au principe de ne rien exposer
+// du backend de tickets au navigateur (SPEC §Tickets, point 24).
+type AttachmentEntry struct {
+	ID        string
+	Name      string
+	SizeLabel string
+	Href      string
+}
+
+// ticketAttachmentList affiche les pièces jointes d'un ticket ou d'un
+// commentaire — y compris celles déposées directement dans le backend
+// (ex. agent support répondant depuis l'interface native de Gitea, sans
+// passer par edecán), pour lesquelles seul ce rattachement par commentaire
+// permet de les retrouver (SPEC §Tickets, point 24).
+templ ticketAttachmentList(attachments []AttachmentEntry) {
+	if len(attachments) > 0 {
+		<div class="edc-ticket-attachments">
+			for _, a := range attachments {
+				<a class="edc-ticket-attachment" href={ templ.SafeURL(a.Href) } download>
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
+					</svg>
+					<span class="edc-ticket-attachment__name">{ a.Name }</span>
+					<span class="edc-ticket-attachment__size">{ a.SizeLabel }</span>
+				</a>
+			}
+		</div>
+	}
+}
+
+// TicketDetailProps configure TicketDetail. L'état affiché est toujours
+// rechargé depuis le backend — lecture à la demande (SPEC §Tickets, point 21).
+type TicketDetailProps struct {
+	ProjectSlug     string
+	ProjectName     string
+	UserDisplayName string
+	UserRoleLabel   string
+	Projects        []layout.ProjectOption
+	Ref             string
+	Title           string
+	Body            string
+	Status          model.TicketStatus
+	Comments        []CommentEntry
+	// RequesterName et RequesterCreatedAt identifient le demandeur réel et la
+	// date de création — l'autorité est la table de mapping locale, pas le
+	// compte technique sous lequel le ticket est créé côté backend
+	// (SPEC §Tickets, point 17).
+	RequesterName      string
+	RequesterCreatedAt string
+	// FromSession indique que le ticket provient d'un handover de session
+	// (SPEC §Handover, point 19).
+	FromSession  bool
+	Attachments  []AttachmentEntry
+	CanClose     bool
+	CanReopen    bool
+	ErrorMessage string
+	// Cards alimente le rail latéral (mêmes tickets que la liste — vue
+	// maître/détail, cf. maquette).
+	Cards             []component.TicketCardProps
+	ActiveTicketCount int
+}
+
+// TicketDetail affiche le fil d'échange complet d'un ticket — carte du
+// corps original, commentaires avec avatar et bulle, formulaire de réponse
+// — dans le panneau principal à droite du rail des tickets
+// (SPEC §UI/UX Considerations : Vue Ticket ; cf. maquette index.html,
+// composant TicketDetail).
+templ TicketDetail(props TicketDetailProps) {
+	@layout.Shell(layout.ShellProps{
+		Title:             "Ticket #" + props.Ref,
+		UserDisplayName:   props.UserDisplayName,
+		UserRoleLabel:     props.UserRoleLabel,
+		ProjectName:       props.ProjectName,
+		ProjectSlug:       props.ProjectSlug,
+		Projects:          props.Projects,
+		ActiveNav:         "tickets",
+		ActiveTicketCount: props.ActiveTicketCount,
+		Sidebar:           ticketsSidebar(props.ProjectSlug, props.Cards),
+	}) {
+		<div class="edc-ticket-header">
+			<div class="edc-ticket-header__main">
+				<div class="edc-ticket-header__meta">
+					@component.Badge(component.BadgeProps{Variant: ticketBadgeVariant(props.Status), Dot: true}) {
+						if props.Status == model.TicketStatusClosed {
+							fermé
+						} else {
+							ouvert
+						}
+					}
+					<span class="edc-ticket-header__ref">
+						#{ props.Ref }
+						if props.ProjectName != "" {
+							{ " · " + props.ProjectName }
+						}
+					</span>
+					if props.FromSession {
+						<span class="edc-ticket-header__via-session">Via session</span>
+					}
+				</div>
+				<h1 class="edc-ticket-header__title">{ props.Title }</h1>
+			</div>
+			<div class="edc-ticket-header__actions">
+				if props.Status == model.TicketStatusOpen && props.CanClose {
+					<form method="post" action={ templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets/" + props.Ref + "/status") }>
+						<input type="hidden" name="status" value="closed"/>
+						@component.Button(component.ButtonProps{Variant: component.ButtonDanger, Size: component.ButtonSm, Type: "submit"}) {
+							Clôturer
+						}
+					</form>
+				}
+				if props.Status == model.TicketStatusClosed && props.CanReopen {
+					<form method="post" action={ templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets/" + props.Ref + "/status") }>
+						<input type="hidden" name="status" value="open"/>
+						@component.Button(component.ButtonProps{Variant: component.ButtonSecondary, Size: component.ButtonSm, Type: "submit"}) {
+							Rouvrir
+						}
+					</form>
+				}
+			</div>
+		</div>
+		<div class="edc-ticket-body-wrap">
+			if props.ErrorMessage != "" {
+				@component.Toast(component.ToastProps{Variant: component.ToastError, Message: props.ErrorMessage})
+			}
+			<div class="edc-ticket-body-card">
+				<div class="edc-ticket-body-card__head">
+					<div class="edc-ticket-avatar--primary">
+						{ ticketCommentInitials(props.RequesterName) }
+					</div>
+					<span class="edc-ticket-comment__author">{ props.RequesterName }</span>
+					<span class="edc-ticket-comment__time">{ props.RequesterCreatedAt }</span>
+				</div>
+				<div class="edc-prose">
+					@templ.Raw(renderTicketBody(props.Body))
+				</div>
+				@ticketAttachmentList(props.Attachments)
+			</div>
+			for _, c := range props.Comments {
+				<div class="edc-ticket-comment">
+					<div
+						class={ commentAvatarClass(c.Role) }
+						if c.Role == "" {
+							style={ "background:" + ticketCommentAvatarColor(c.Author) + "22;border:1px solid " + ticketCommentAvatarColor(c.Author) + "44;color:" + ticketCommentAvatarColor(c.Author) }
+						}
+					>
+						{ ticketCommentInitials(c.Author) }
+					</div>
+					<div class="edc-ticket-comment__col">
+						<div class="edc-ticket-comment__head">
+							<span class="edc-ticket-comment__author">{ c.Author }</span>
+							if c.Role != "" {
+								@component.Badge(component.BadgeProps{Variant: commentRoleBadgeVariant(c.Role), Size: component.BadgeSm}) {
+									{ commentRoleLabel(c.Role) }
+								}
+							}
+							<span class="edc-ticket-comment__time">{ c.CreatedAt }</span>
+						</div>
+						<div class="edc-ticket-comment__bubble edc-prose">
+							@templ.Raw(renderTicketBody(c.Body))
+						</div>
+						@ticketAttachmentList(c.Attachments)
+					</div>
+				</div>
+			}
+			if props.Status == model.TicketStatusOpen {
+				<form
+					class="edc-ticket-composer"
+					method="post"
+					enctype="multipart/form-data"
+					action={ templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets/" + props.Ref + "/comments") }
+				>
+					<div class="edc-ticket-avatar--primary">
+						{ ticketCommentInitials(props.UserDisplayName) }
+					</div>
+					<div class="edc-ticket-composer__col">
+						@component.Textarea(component.TextareaProps{ID: "comment-body", Name: "body", Placeholder: "Ajouter un commentaire…", Rows: 3, Required: true})
+						<div id="comment-attachments-preview" class="edc-ticket-composer__attachments"></div>
+						<div class="edc-ticket-composer__actions">
+							<label for="comment-attachments-input" class="edc-ticket-composer__attach" title="Joindre un fichier à ce commentaire">
+								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
+								</svg>
+								Joindre un fichier
+							</label>
+							<input
+								id="comment-attachments-input"
+								class="edc-ticket-composer__attach-input"
+								type="file"
+								name="attachments"
+								multiple
+								onchange="document.getElementById('comment-attachments-preview').textContent = this.files.length ? Array.from(this.files).map(f => f.name).join(', ') : ''"
+							/>
+							@component.Button(component.ButtonProps{Variant: component.ButtonPrimary, Size: component.ButtonSm, Type: "submit"}) {
+								Commenter
+							}
+						</div>
+					</div>
+				</form>
+			}
+		</div>
+	}
+}

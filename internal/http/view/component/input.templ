@@ -1,0 +1,115 @@
+package component
+
+import "strconv"
+
+// InputProps configure Input (cf. Design system Edecàn/components/forms/Input.jsx).
+type InputProps struct {
+	ID          string
+	Name        string
+	Label       string
+	Type        string // text | email | password ...
+	Value       string
+	Placeholder string
+	Error       string
+	Helper      string
+	Disabled    bool
+	Required    bool
+}
+
+func (p InputProps) htmlType() string {
+	if p.Type == "" {
+		return "text"
+	}
+	return p.Type
+}
+
+// Input est le champ texte standard d'edecàn, avec label, erreur et texte d'aide.
+templ Input(props InputProps) {
+	<div class={ classes("edc-field", ifClass(props.Error != "", "edc-field--error")) }>
+		if props.Label != "" {
+			<label for={ props.ID } class="edc-field__label">
+				{ props.Label }
+				if props.Required {
+					<span class="edc-field__required">*</span>
+				}
+			</label>
+		}
+		<div class="edc-input-wrap">
+			<input
+				id={ props.ID }
+				name={ props.Name }
+				type={ props.htmlType() }
+				value={ props.Value }
+				placeholder={ props.Placeholder }
+				class="edc-input"
+				disabled?={ props.Disabled }
+				required?={ props.Required }
+			/>
+		</div>
+		if props.Error != "" || props.Helper != "" {
+			<p class="edc-field__helper">
+				if props.Error != "" {
+					{ props.Error }
+				} else {
+					{ props.Helper }
+				}
+			</p>
+		}
+	</div>
+}
+
+// TextareaProps configure Textarea — éditeur Markdown multilignes
+// (SPEC §UI/UX Considerations : Vue Brouillon de ticket).
+type TextareaProps struct {
+	ID          string
+	Name        string
+	Label       string
+	Value       string
+	Placeholder string
+	Rows        int
+	Error       string
+	Helper      string
+	Disabled    bool
+	Required    bool
+	Mono        bool // JetBrains Mono — utile pour l'aperçu de code/metadata
+}
+
+func (p TextareaProps) rows() int {
+	if p.Rows == 0 {
+		return 4
+	}
+	return p.Rows
+}
+
+// Textarea est l'éditeur Markdown multilignes (messages, brouillons de
+// ticket, commentaires — SPEC §Chat point 12, §Handover point 15).
+templ Textarea(props TextareaProps) {
+	<div class={ classes("edc-field", ifClass(props.Error != "", "edc-field--error")) }>
+		if props.Label != "" {
+			<label for={ props.ID } class="edc-field__label">
+				{ props.Label }
+				if props.Required {
+					<span class="edc-field__required">*</span>
+				}
+			</label>
+		}
+		<textarea
+			id={ props.ID }
+			name={ props.Name }
+			rows={ strconv.Itoa(props.rows()) }
+			placeholder={ props.Placeholder }
+			class={ classes("edc-textarea", ifClass(props.Mono, "edc-textarea--mono")) }
+			disabled?={ props.Disabled }
+			required?={ props.Required }
+		>{ props.Value }</textarea>
+		if props.Error != "" || props.Helper != "" {
+			<p class="edc-field__helper">
+				if props.Error != "" {
+					{ props.Error }
+				} else {
+					{ props.Helper }
+				}
+			</p>
+		}
+	</div>
+}

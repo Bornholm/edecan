@@ -1,0 +1,103 @@
+package component
+
+import (
+	"strings"
+
+	"edecan/internal/http/view/markdown"
+)
+
+// ChatMessageProps configure ChatMessage
+// (cf. Design system Edecàn/components/chat/ChatMessage.jsx).
+type ChatMessageProps struct {
+	Role        string // user | assistant | system | summary
+	Content     string // Markdown
+	Timestamp   string
+	IsStreaming bool
+	AuthorName  string
+	// Tools liste les outils MCP appelés par l'agent pendant la génération de
+	// ce message — retour visuel éphémère (non persisté), affiché au-dessus de
+	// la bulle de réponse (cf. handler.StreamReply).
+	Tools []string
+}
+
+func (p ChatMessageProps) isUser() bool {
+	return p.Role == "user"
+}
+
+func (p ChatMessageProps) isSystem() bool {
+	return p.Role == "system" || p.Role == "summary"
+}
+
+var avatarColors = []string{"#6366F1", "#8B5CF6", "#06B6D4", "#10B981", "#F59E0B"}
+
+// avatarColor dérive une couleur stable à partir du nom — pas d'illustration
+// décorative, seuls les avatars portent de la couleur (SPEC §VISUAL
+// FOUNDATIONS : Images & illustrations).
+func avatarColor(name string) string {
+	if name == "" {
+		return avatarColors[0]
+	}
+	return avatarColors[int(name[0])%len(avatarColors)]
+}
+
+func initials(name string) string {
+	if name == "" {
+		return "US"
+	}
+	runes := []rune(strings.ToUpper(name))
+	if len(runes) == 1 {
+		return string(runes[0])
+	}
+	return string(runes[:2])
+}
+
+func messageBodyHTML(content string) string {
+	html, err := markdown.ToHTML(content)
+	if err != nil {
+		// Le contenu brut reste affiché en cas d'échec de rendu — jamais de
+		// page blanche pour un message déjà persisté.
+		return content
+	}
+	return html
+}
+
+// ChatMessage affiche un message User ou assistant avec rendu Markdown
+// (SPEC §Chat, point 12) et curseur de streaming (point 6).
+templ ChatMessage(props ChatMessageProps) {
+	if props.isSystem() {
+		<div class="edc-message--system">
+			<span class="edc-message__system-pill">{ props.Content }</span>
+		</div>
+	} else {
+		<div class={ classes("edc-message", ifClass(props.isUser(), "edc-message--user"), ifClass(!props.isUser(), "edc-message--assistant")) }>
+			if props.isUser() {
+				<div class="edc-message__avatar" style={ "background:" + avatarColor(props.AuthorName) + "22;border-color:" + avatarColor(props.AuthorName) + "44;color:" + avatarColor(props.AuthorName) }>
+					{ initials(props.AuthorName) }
+				</div>
+			} else {
+				<div class="edc-message__avatar edc-message__avatar--ai">IA</div>
+			}
+			<div class="edc-message__col">
+				if len(props.Tools) > 0 {
+					<div class={ classes("edc-tools", ifClass(props.IsStreaming, "edc-tools--active")) }>
+						for _, tool := range props.Tools {
+							<span class="edc-tools__pill">
+								<span class="edc-tools__dot"></span>
+								{ tool }
+							</span>
+						}
+					</div>
+				}
+				<div class="edc-message__bubble edc-prose">
+					@templ.Raw(messageBodyHTML(props.Content))
+					if props.IsStreaming {
+						<span class="edc-message__cursor"></span>
+					}
+				</div>
+				if props.Timestamp != "" {
+					<span class="edc-message__timestamp">{ props.Timestamp }</span>
+				}
+			</div>
+		</div>
+	}
+}

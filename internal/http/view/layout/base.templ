@@ -1,0 +1,40 @@
+// Package layout fournit le gabarit HTML commun à toutes les pages
+// (SPEC §UI/UX Considerations).
+package layout
+
+// Base est le layout HTML racine : thème sombre par défaut (mode clair via
+// data-theme="light", cf. tokens/colors.css), polices Figtree/JetBrains Mono,
+// HTMX pour le streaming et les fragments (PLAN.md §Phase 7).
+//
+// TODO(prod): vendorer htmx.org localement plutôt que de dépendre d'un CDN,
+// pour la conformité CSP et la disponibilité hors-ligne.
+templ Base(title string) {
+	<!DOCTYPE html>
+	<html lang="fr" data-theme="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title } · edecán</title>
+			<script>
+				(function() {
+					var stored = localStorage.getItem('edc-theme');
+					if (stored === 'light' || stored === 'dark') {
+						document.documentElement.setAttribute('data-theme', stored);
+					}
+				})();
+				function edcToggleTheme() {
+					var html = document.documentElement;
+					var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+					html.setAttribute('data-theme', next);
+					localStorage.setItem('edc-theme', next);
+				}
+			</script>
+			<link rel="stylesheet" href="/static/css/styles.css"/>
+			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+			<script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+		</head>
+		<body>
+			{ children... }
+		</body>
+	</html>
+}

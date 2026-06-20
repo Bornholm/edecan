@@ -1,0 +1,157 @@
+# Configuration edecán — copier vers config.yaml et adapter.
+# Les secrets (client_secret, token) DOIVENT être injectés via variables
+# d'environnement, jamais en clair ici (SPEC §Sécurité).
+
+server:
+  addr: ":8080"
+  base_url: "${EDECAN_BASE_URL}"
+  session_secret: "${EDECAN_SESSION_SECRET}"
+  sqlite_path: "edecan.db"
+
+idps:
+  - name: keycloak
+    issuer: "${EDECAN_OIDC_ISSUER}"
+    client_id: "${EDECAN_OIDC_CLIENT_ID}"
+    client_secret: "${EDECAN_OIDC_CLIENT_SECRET}"
+    redirect_url: "${EDECAN_BASE_URL}/auth/keycloak/callback"
+  # Exemple de connexion via GitHub — GitHub n'implémentant pas OIDC (pas de
+  # découverte, pas d'id_token), type: oauth2 bascule sur l'OAuth2 "classique"
+  # de GitHub ; issuer est alors ignoré. Créer la GitHub OAuth App sur
+  # https://github.com/settings/developers avec comme callback URL
+  # "${EDECAN_BASE_URL}/auth/github/callback".
+  - name: github
+    type: oauth2
+    client_id: "${EDECAN_GITHUB_OAUTH_CLIENT_ID}"
+    client_secret: "${EDECAN_GITHUB_OAUTH_CLIENT_SECRET}"
+    redirect_url: "${EDECAN_BASE_URL}/auth/github/callback"
+
+agents:
+  - name: support-generaliste
+    provider: openai
+    model: gpt-4o-mini
+    api_key: "${EDECAN_OPENAI_API_KEY}"
+    system_prompt: |
+      Tu es l'agent de support niveau 1 d'edecán. Réponds de façon directe et
+      professionnelle, en français. Si tu ne peux pas résoudre la demande,
+      invite l'utilisateur à transformer la session en ticket.
+    # Borne la longueur de chaque réponse — un agent de chat ne doit pas
+    # écrire des pavés de texte. Optionnel : 1024 par défaut si omis.
+    max_completion_tokens: 1024
+    mcp_servers: []
+  # Exemple d'agent doté de serveurs MCP — les outils qu'ils exposent
+  # (recherche documentaire, requêtes internes, etc.) sont alors disponibles
+  # à l'agent pendant la conversation. Deux transports sont possibles selon
+  # le champ `type` :
+  #
+  #   - type: http (défaut) — serveur distant en Streamable HTTP. `url` est
+  #     obligatoire ; `headers` est optionnel : à utiliser pour
+  #     l'authentification au serveur MCP (jeton, clé d'API...), toujours via
+  #     variable d'environnement, jamais en clair. Chaque valeur d'en-tête
+  #     est un template Go (text/template), exécuté à chaque requête contre
+  #     l'identité de la session de chat en cours — champs disponibles :
+  #     SessionID, UserEmail, UserDisplayName. Une connexion MCP distincte
+  #     est établie par session de chat edecán : un serveur MCP qui scope ses
+  #     ressources par session (ex. un bac à sable shell) doit donc résoudre
+  #     ce scope à partir de l'un de ces en-têtes.
+  #
+  #   - type: stdio — serveur local lancé comme sous-processus, dialoguant
+  #     sur stdin/stdout. `command` est l'exécutable (sans ses arguments),
+  #     `args` la liste de ses arguments, `env` une table de variables
+  #     d'environnement supplémentaires ajoutées à l'environnement du serveur
+  #     edecán.
+  - name: support-outille
+    provider: openai
+    model: gpt-4o-mini
+    api_key: "${EDECAN_OPENAI_API_KEY}"
+    system_prompt: |
+      Tu es l'agent de support niveau 1 d'edecán. Utilise les outils mis à ta
+      disposition pour rechercher dans la documentation interne avant de
+      répondre.
+    # Nombre maximum d'allers-retours outil↔LLM enchaînés avant que l'agent
+    # ne doive répondre à l'utilisateur — garde-fou contre un agent qui
+    # multiplie les appels d'outils sans converger. Une fois ce plafond
+    # atteint, une réponse est forcée à partir du contexte déjà collecté.
+    # Optionnel : 3 par défaut si omis.
+    max_sequential_tool_calls: 3
+    mcp_servers:
+      - name: documentation-interne
+        type: http
+        url: "${EDECAN_MCP_DOCS_URL}"
+        headers:
+          Authorization: "Bearer ${EDECAN_MCP_DOCS_TOKEN}"
+          X-Workspace: "{{.SessionID}}"
+      - name: systeme-de-fichiers
+        type: stdio
+        command: npx
+        args:
+          - -y
+          - "@modelcontextprotocol/server-filesystem"
+          - /srv/edecan/docs
+        env:
+          NODE_ENV: production
+
+# Emplacements de stockage du contenu des pièces jointes, externes au
+# backend de tickets (cf. SPEC §Tickets, point 24) — obligatoire pour
+# GitHub (aucun stockage natif de pièce jointe), optionnel pour Gitea
+# (stockage natif par défaut ; permet sinon de ne pas faire transiter ce
+# contenu par le backend, ex. pour des raisons de confidentialité).
+attachment_stores:
+  - name: local-default
+    type: local
+    local:
+      directory: "/var/lib/edecan/attachments"
+  # Exemple de stockage S3 compatible (AWS S3, MinIO...) — access_key et
+  # secret_key DOIVENT être injectées via variable d'environnement.
+  # - name: s3-default
+  #   type: s3
+  #   s3:
+  #     endpoint: "${EDECAN_S3_ENDPOINT}" # ex. "s3.amazonaws.com", sans schéma
+  #     bucket: "${EDECAN_S3_BUCKET}"
+  #     prefix: "edecan-attachments"
+  #     region: "${EDECAN_S3_REGION}"
+  #     use_ssl: true
+  #     access_key: "${EDECAN_S3_ACCESS_KEY}"
+  #     secret_key: "${EDECAN_S3_SECRET_KEY}"
+
+ticket_backends:
+  - name: gitea-principal
+    type: gitea
+    gitea:
+      base_url: "${EDECAN_GITEA_BASE_URL}"
+      token: "${EDECAN_GITEA_TOKEN}"
+      owner: "${EDECAN_GITEA_OWNER}"
+      repo: "${EDECAN_GITEA_REPO}"
+      # attachment_store: local-default # optionnel — sinon stockage natif Gitea
+  # Exemple de backend GitHub — base_url est optionnel (ne sert que pour une
+  # instance GitHub Enterprise : "https://<host>/api/v3" ;
+  # "https://api.github.com" par défaut). attachment_store est en revanche
+  # obligatoire : GitHub n'offre aucun stockage natif de pièce jointe
+  # rattachée à une issue ou à un commentaire.
+  - name: github-principal
+    type: github
+    github:
+      base_url: "${EDECAN_GITHUB_BASE_URL}"
+      token: "${EDECAN_GITHUB_TOKEN}"
+      owner: "${EDECAN_GITHUB_OWNER}"
+      repo: "${EDECAN_GITHUB_REPO}"
+      attachment_store: local-default
+
+projects:
+  - slug: support-app
+    name: "Support — Application"
+    agent: support-generaliste
+    ticket_backend: gitea-principal
+    membership:
+      - pattern: "*@support.exemple.com"
+        role: support
+      - pattern: "*@exemple.com"
+        role: user
+  - slug: support-app-github
+    name: "Support — Application (GitHub)"
+    agent: support-outille
+    ticket_backend: github-principal
+    membership:
+      - pattern: "*@support.exemple.com"
+        role: support
+      - pattern: "*@exemple.com"
+        role: user

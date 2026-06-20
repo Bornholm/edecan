@@ -1,0 +1,206 @@
+/* ─────────────────────────────────────────────
+   edecàn · Color Tokens
+   Primary: Indigo · Mode: dark-first
+   ───────────────────────────────────────────── */
+
+/* ── Raw Palette ── */
+:root {
+  /* Indigo */
+  --indigo-50:  #EEF2FF;
+  --indigo-100: #E0E7FF;
+  --indigo-200: #C7D2FE;
+  --indigo-300: #A5B4FC;
+  --indigo-400: #818CF8;
+  --indigo-500: #6366F1;
+  --indigo-600: #4F46E5;
+  --indigo-700: #4338CA;
+  --indigo-800: #3730A3;
+  --indigo-900: #312E81;
+
+  /* Slate-blue neutrals */
+  --neutral-0:   #FFFFFF;
+  --neutral-50:  #F4F6FD;
+  --neutral-100: #E8ECF7;
+  --neutral-200: #D0D6ED;
+  --neutral-300: #A9B2CC;
+  --neutral-400: #6E7A98;
+  --neutral-500: #4A5370;
+  --neutral-600: #303650;
+  --neutral-700: #1E2236;
+  --neutral-800: #141726;
+  --neutral-900: #0C0E1A;
+  --neutral-950: #070912;
+
+  /* Semantic raws */
+  --green-400: #4ADE80;
+  --green-500: #22C55E;
+  --green-600: #16A34A;
+  --amber-400: #FBBF24;
+  --amber-500: #F59E0B;
+  --amber-600: #D97706;
+  --red-400:   #F87171;
+  --red-500:   #EF4444;
+  --red-600:   #DC2626;
+  --sky-400:   #38BDF8;
+  --sky-500:   #0EA5E9;
+  --sky-600:   #0284C7;
+}
+
+/* ── Dark Theme (default) ── */
+:root,
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-base:    #0B0D17;
+  --bg-surface: #11131F;
+  --bg-raised:  #181B2D;
+  --bg-overlay: #1F2238;
+  --bg-subtle:  #15172A;
+  --bg-input:   #0E1020;
+
+  /* Foregrounds */
+  --fg-1: #E6E9F4;
+  --fg-2: #8892B0;
+  --fg-3: #50597A;
+  --fg-inverse: #0B0D17;
+
+  /* Primary */
+  --color-primary:        #6366F1;
+  --color-primary-hover:  #818CF8;
+  --color-primary-active: #4F46E5;
+  --color-primary-subtle: rgba(99, 102, 241, 0.14);
+  --color-primary-text:   #818CF8;
+  --color-primary-border: rgba(99, 102, 241, 0.35);
+
+  /* Borders */
+  --border-subtle:  #191C30;
+  --border-default: #252840;
+  --border-strong:  #353A60;
+
+  /* Semantic — success */
+  --color-success:        #22C55E;
+  --color-success-subtle: rgba(34, 197, 94, 0.13);
+  --color-success-border: rgba(34, 197, 94, 0.3);
+  --color-success-text:   #4ADE80;
+
+  /* Semantic — warning */
+  --color-warning:        #F59E0B;
+  --color-warning-subtle: rgba(245, 158, 11, 0.13);
+  --color-warning-border: rgba(245, 158, 11, 0.3);
+  --color-warning-text:   #FBBF24;
+
+  /* Semantic — error */
+  --color-error:        #EF4444;
+  --color-error-subtle: rgba(239, 68, 68, 0.13);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-text:   #F87171;
+
+  /* Semantic — info */
+  --color-info:        #0EA5E9;
+  --color-info-subtle: rgba(14, 165, 233, 0.13);
+  --color-info-border: rgba(14, 165, 233, 0.3);
+  --color-info-text:   #38BDF8;
+
+  /* edecàn status tokens */
+  --status-open:         #22C55E;
+  --status-open-subtle:  rgba(34, 197, 94, 0.13);
+  --status-open-text:    #4ADE80;
+  --status-closed:       #4A5370;
+  --status-closed-subtle:rgba(74, 83, 112, 0.3);
+  --status-closed-text:  #8892B0;
+  --status-pending:      #F59E0B;
+  --status-pending-subtle:rgba(245, 158, 11, 0.13);
+  --status-pending-text: #FBBF24;
+  --status-ai:           #6366F1;
+  --status-ai-subtle:    rgba(99, 102, 241, 0.14);
+  --status-ai-text:      #818CF8;
+
+  /* Role tokens */
+  --role-user-bg:    rgba(99, 102, 241, 0.14);
+  --role-user-text:  #818CF8;
+  --role-support-bg: rgba(14, 165, 233, 0.13);
+  --role-support-text: #38BDF8;
+
+  /* Code blocks */
+  --bg-code:    #0D0F1E;
+  --fg-code:    #A5B4FC;
+  --border-code: #252840;
+}
+
+/* ── Light Theme ── */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-base:    #F2F4FC;
+  --bg-surface: #FFFFFF;
+  --bg-raised:  #FFFFFF;
+  --bg-overlay: #EEF1FA;
+  --bg-subtle:  #F8F9FE;
+  --bg-input:   #FFFFFF;
+
+  /* Foregrounds */
+  --fg-1: #0E1020;
+  --fg-2: #3D4568;
+  --fg-3: #8892B0;
+  --fg-inverse: #FFFFFF;
+
+  /* Primary */
+  --color-primary:        #4F46E5;
+  --color-primary-hover:  #4338CA;
+  --color-primary-active: #3730A3;
+  --color-primary-subtle: rgba(79, 70, 229, 0.08);
+  --color-primary-text:   #4F46E5;
+  --color-primary-border: rgba(79, 70, 229, 0.25);
+
+  /* Borders */
+  --border-subtle:  #E8EBF7;
+  --border-default: #D4D9EE;
+  --border-strong:  #B8C0E0;
+
+  /* Semantic — success */
+  --color-success:        #16A34A;
+  --color-success-subtle: rgba(22, 163, 74, 0.08);
+  --color-success-border: rgba(22, 163, 74, 0.25);
+  --color-success-text:   #16A34A;
+
+  /* Semantic — warning */
+  --color-warning:        #D97706;
+  --color-warning-subtle: rgba(217, 119, 6, 0.08);
+  --color-warning-border: rgba(217, 119, 6, 0.25);
+  --color-warning-text:   #D97706;
+
+  /* Semantic — error */
+  --color-error:        #DC2626;
+  --color-error-subtle: rgba(220, 38, 38, 0.08);
+  --color-error-border: rgba(220, 38, 38, 0.25);
+  --color-error-text:   #DC2626;
+
+  /* Semantic — info */
+  --color-info:        #0284C7;
+  --color-info-subtle: rgba(2, 132, 199, 0.08);
+  --color-info-border: rgba(2, 132, 199, 0.25);
+  --color-info-text:   #0284C7;
+
+  /* edecàn status tokens */
+  --status-open:          #16A34A;
+  --status-open-subtle:   rgba(22, 163, 74, 0.08);
+  --status-open-text:     #16A34A;
+  --status-closed:        #6B7280;
+  --status-closed-subtle: rgba(107, 114, 128, 0.12);
+  --status-closed-text:   #6B7280;
+  --status-pending:       #D97706;
+  --status-pending-subtle:rgba(217, 119, 6, 0.08);
+  --status-pending-text:  #D97706;
+  --status-ai:            #4F46E5;
+  --status-ai-subtle:     rgba(79, 70, 229, 0.08);
+  --status-ai-text:       #4F46E5;
+
+  /* Role tokens */
+  --role-user-bg:      rgba(79, 70, 229, 0.08);
+  --role-user-text:    #4F46E5;
+  --role-support-bg:   rgba(2, 132, 199, 0.08);
+  --role-support-text: #0284C7;
+
+  /* Code blocks */
+  --bg-code:     #F1F3FB;
+  --fg-code:     #4338CA;
+  --border-code: #D4D9EE;
+}

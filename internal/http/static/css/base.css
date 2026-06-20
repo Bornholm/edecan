@@ -1,0 +1,19 @@
+/* ─────────────────────────────────────────────
+   edecàn · Base reset
+   ───────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-base);
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+}
+
+a { color: var(--color-primary-text); }
+
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }

@@ -1,0 +1,55 @@
+/* ─────────────────────────────────────────────
+   edecàn · Spacing & Layout Tokens
+   Base unit: 4px
+   ───────────────────────────────────────────── */
+
+:root {
+  /* Spacing scale */
+  --space-0:  0px;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  28px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Component padding */
+  --padding-btn-sm:   6px 12px;
+  --padding-btn-md:   8px 16px;
+  --padding-btn-lg:   10px 20px;
+  --padding-input:    9px 12px;
+  --padding-card:     20px;
+  --padding-card-lg:  24px;
+  --padding-sidebar:  16px;
+  --padding-chat:     24px 32px;
+
+  /* Border radius */
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   10px;
+  --radius-xl:   14px;
+  --radius-2xl:  20px;
+  --radius-full: 9999px;
+
+  /* Layout */
+  --sidebar-width:     280px;
+  --panel-width:       320px;
+  --chat-max-width:    680px;
+  --content-max-width: 860px;
+  --topbar-height:     56px;
+
+  /* Z-index */
+  --z-base:    1;
+  --z-sticky:  10;
+  --z-overlay: 100;
+  --z-modal:   200;
+  --z-toast:   300;
+  --z-tooltip: 400;
+}

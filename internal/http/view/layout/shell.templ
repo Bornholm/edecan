@@ -1,0 +1,161 @@
+package layout
+
+import "strconv"
+
+// ShellProps configure Shell — la coquille commune aux pages authentifiées :
+// rail latéral fixe (marque, projet courant, navigation Sessions/Tickets,
+// liste contextuelle, utilisateur) et zone de contenu principale, à l'image
+// de la maquette (Design system Edecàn/Edecàn App.dc.html). Il n'y a pas de
+// page d'accueil : la connexion redirige directement vers le dernier projet
+// actif de l'utilisateur (cf. handler.Home).
+// ProjectOption est un projet accessible à l'utilisateur, proposé dans le
+// sélecteur de projet du rail (cf. handler.projectOptions).
+type ProjectOption struct {
+	Slug string
+	Name string
+}
+
+type ShellProps struct {
+	Title           string
+	UserDisplayName string
+	UserRoleLabel   string // ex: "Support · Infra"
+	ProjectName     string
+	ProjectSlug     string
+	// Projects liste les projets accessibles à l'utilisateur — affiché comme
+	// sélecteur sous la puce projet dès qu'il y en a plus d'un (pas de page
+	// dédiée pour changer de projet).
+	Projects  []ProjectOption
+	ActiveNav string // "chat" | "tickets"
+	// ActiveTicketCount alimente le badge de la navigation Tickets — 0 ⇒
+	// badge masqué. Calculé à chaque rendu de page complète (Chat ou
+	// Tickets), jamais lors d'un fragment htmx (ex. PostMessage), pour ne
+	// pas multiplier les appels au backend de tickets à chaque message.
+	ActiveTicketCount int
+	// Sidebar est le contenu de la liste contextuelle du rail (sessions pour
+	// le chat, tickets pour les tickets).
+	Sidebar templ.Component
+}
+
+func userInitials(name string) string {
+	if name == "" {
+		return "?"
+	}
+	runes := []rune(name)
+	if len(runes) == 1 {
+		return string(runes[0])
+	}
+	return string(runes[:2])
+}
+
+// Shell affiche le rail latéral (marque, thème, projet, navigation, liste,
+// utilisateur) autour du contenu de page (SPEC §UI/UX Considerations).
+templ Shell(props ShellProps) {
+	@Base(props.Title) {
+		<div class="edc-app">
+			<aside class="edc-rail">
+				<div class="edc-rail__top">
+					<a class="edc-rail__brand" href="/">
+						<span class="edc-rail__logo">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+							</svg>
+						</span>
+						<span class="edc-rail__name">edecán</span>
+					</a>
+					<button type="button" class="edc-rail__theme-toggle" onclick="edcToggleTheme()" aria-label="Changer de thème">
+						<span class="edc-theme-icon--sun">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 6a6 6 0 100 12A6 6 0 0012 6z"></path>
+							</svg>
+						</span>
+						<span class="edc-theme-icon--moon">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+							</svg>
+						</span>
+					</button>
+				</div>
+				if len(props.Projects) > 1 {
+					<details class="edc-rail__project-switcher">
+						<summary class="edc-rail__project">
+							<span class="edc-rail__project-name">
+								<span class="edc-rail__project-dot"></span>
+								{ props.ProjectName }
+							</span>
+							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--fg-3);">
+								<path d="M6 9l6 6 6-6"></path>
+							</svg>
+						</summary>
+						<div class="edc-rail__project-menu">
+							for _, p := range props.Projects {
+								<a
+									class={ "edc-rail__project-menu-item", templ.KV("edc-rail__project-menu-item--active", p.Slug == props.ProjectSlug) }
+									href={ templ.SafeURL("/projects/" + p.Slug + "/chat") }
+								>
+									{ p.Name }
+								</a>
+							}
+						</div>
+					</details>
+				} else if props.ProjectName != "" {
+					<div class="edc-rail__project">
+						<span class="edc-rail__project-name">
+							<span class="edc-rail__project-dot"></span>
+							{ props.ProjectName }
+						</span>
+					</div>
+				}
+				if props.ProjectSlug != "" {
+					<nav class="edc-rail__nav">
+						<a
+							class={ "edc-rail__navitem", templ.KV("edc-rail__navitem--active", props.ActiveNav == "chat") }
+							href={ templ.SafeURL("/projects/" + props.ProjectSlug + "/chat") }
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+							</svg>
+							<span class="edc-rail__navitem-label">Sessions</span>
+						</a>
+						<a
+							class={ "edc-rail__navitem", templ.KV("edc-rail__navitem--active", props.ActiveNav == "tickets") }
+							href={ templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets") }
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+							</svg>
+							<span class="edc-rail__navitem-label">Tickets</span>
+							if props.ActiveTicketCount > 0 {
+								<span class="edc-rail__navitem-badge">{ strconv.Itoa(props.ActiveTicketCount) }</span>
+							}
+						</a>
+					</nav>
+				}
+				<div class="edc-rail__list">
+					if props.Sidebar != nil {
+						@props.Sidebar
+					}
+				</div>
+				<div class="edc-rail__user">
+					<span class="edc-rail__user-avatar">{ userInitials(props.UserDisplayName) }</span>
+					<div class="edc-rail__user-info">
+						<div class="edc-rail__user-name">{ props.UserDisplayName }</div>
+						if props.UserRoleLabel != "" {
+							<div class="edc-rail__user-meta">{ props.UserRoleLabel }</div>
+						}
+					</div>
+					<form method="post" action="/logout">
+						<button type="submit" class="edc-rail__logout" aria-label="Déconnexion">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path>
+							</svg>
+						</button>
+					</form>
+				</div>
+			</aside>
+			<div class="edc-app__content">
+				{ children... }
+			</div>
+			<div id="modal-root"></div>
+		</div>
+	}
+}
