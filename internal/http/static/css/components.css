@@ -2215,3 +2215,170 @@ html[data-theme="light"] .edc-theme-icon--moon {
     transform: translateX(260%);
   }
 }
+
+/* ── Partage public (Phase 4) ────────────────────────────────────────────── */
+
+/* Panneau de la modale de partage : lien copiable + note explicative. */
+.edc-share {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.edc-share__label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--fg-2);
+}
+.edc-share__row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+.edc-share__input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--fg-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding: 8px 10px;
+}
+.edc-share__input:focus {
+  outline: none;
+  border-color: var(--color-primary-border);
+}
+/* Le bouton « Copier le lien » réutilise .edc-message__action mais reste
+   toujours visible (pas de révélation au survol comme dans un message). */
+.edc-share__copy {
+  flex-shrink: 0;
+}
+.edc-share__hint {
+  font-size: var(--text-sm);
+  color: var(--fg-3);
+  line-height: 1.5;
+}
+.edc-share__hint--intro {
+  color: var(--fg-2);
+}
+
+/* ── Coquille publique (conversation partagée, lecture seule) ─────────────── */
+
+.edc-public {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+  color: var(--fg-1);
+}
+.edc-public__header {
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.edc-public__header-inner {
+  width: 100%;
+  max-width: var(--chat-max-width);
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.edc-public__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--weight-semibold);
+}
+.edc-public__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-subtle);
+  border: 1px solid var(--color-primary-border);
+  color: var(--color-primary-text);
+}
+.edc-public__name {
+  font-size: var(--text-md);
+}
+.edc-public__tag {
+  font-size: var(--text-xs);
+  color: var(--fg-3);
+  margin-left: auto;
+}
+.edc-public__theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--fg-2);
+  cursor: pointer;
+}
+.edc-public__theme-toggle:hover {
+  color: var(--fg-1);
+  background: var(--bg-raised);
+}
+.edc-public__main {
+  flex: 1;
+  padding: 28px 24px;
+}
+.edc-public__conversation {
+  width: 100%;
+  max-width: var(--chat-max-width);
+  margin: 0 auto;
+}
+.edc-public__title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-3);
+}
+.edc-public__note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--fg-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-bottom: var(--space-5);
+}
+.edc-public__note svg {
+  flex-shrink: 0;
+  color: var(--fg-2);
+}
+.edc-public__messages {
+  max-width: none;
+}
+.edc-public__empty {
+  text-align: center;
+  color: var(--fg-3);
+  padding: 40px 0;
+}
+.edc-public__footer {
+  border-top: 1px solid var(--border-subtle);
+  padding: 16px 24px;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--fg-3);
+}
+.edc-public__footer-link {
+  color: var(--fg-2);
+  text-decoration: none;
+}
+.edc-public__footer-link:hover {
+  color: var(--fg-1);
+  text-decoration: underline;
+}

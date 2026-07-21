@@ -43,6 +43,7 @@ func Open(path string) (*gorm.DB, error) {
 		&MessageRow{},
 		&TicketMappingRow{},
 		&RelevanceFlagRow{},
+		&SharedConversationRow{},
 	); err != nil {
 		return nil, fmt.Errorf("migration automatique: %w", err)
 	}

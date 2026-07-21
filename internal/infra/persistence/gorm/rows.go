@@ -74,3 +74,17 @@ type RelevanceFlagRow struct {
 }
 
 func (RelevanceFlagRow) TableName() string { return "relevance_flags" }
+
+// SharedConversationRow est la projection GORM de model.SharedConversation.
+// Token porte un index unique (le jeton est la clé d'accès publique) ;
+// SessionID est indexé pour retrouver un partage actif existant.
+type SharedConversationRow struct {
+	ID        uint   `gorm:"primaryKey"`
+	Token     string `gorm:"uniqueIndex"`
+	SessionID uint   `gorm:"index"`
+	CreatedBy uint
+	SharedAt  time.Time
+	RevokedAt *time.Time
+}
+
+func (SharedConversationRow) TableName() string { return "shared_conversations" }

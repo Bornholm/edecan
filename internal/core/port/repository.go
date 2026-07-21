@@ -56,6 +56,21 @@ type TicketMappingRepository interface {
 	ListByProject(ctx context.Context, p model.ProjectID) ([]*model.TicketMapping, error)
 }
 
+// ShareRepository persiste les partages publics de conversation. La résolution
+// par jeton (FindByToken) est la seule voie d'accès de la route publique — elle
+// ne filtre pas par utilisateur (partage anonyme), mais la couche service
+// refuse les partages révoqués et borne l'instantané. La création et la
+// révocation, elles, passent par un contrôle de propriété de session côté
+// service (jamais dans ce repository).
+type ShareRepository interface {
+	Save(ctx context.Context, s *model.SharedConversation) error
+	FindByToken(ctx context.Context, token model.ShareToken) (*model.SharedConversation, error)
+	// FindActiveBySession retourne le partage actif (non révoqué) de la session,
+	// ou (nil, nil) s'il n'en existe aucun — permet de réutiliser un lien
+	// existant plutôt que d'en multiplier (idempotence côté service).
+	FindActiveBySession(ctx context.Context, sessionID model.SessionID) (*model.SharedConversation, error)
+}
+
 // RelevanceFlagRepository persiste les signalements manuels « Cet échange
 // m'a aidé » (SPEC §FAQ).
 type RelevanceFlagRepository interface {

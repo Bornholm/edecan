@@ -139,6 +139,19 @@ templ Chat(props ChatProps) {
 						</div>
 					</div>
 					<div class="edc-chat-header__actions">
+						<button
+							class="edc-btn edc-btn--secondary edc-btn--sm"
+							type="button"
+							hx-post={ string(templ.SafeURL(sessionHref(props.ProjectSlug, props.CurrentSession.ID) + "/share")) }
+							hx-target="#modal-root"
+							hx-swap="innerHTML"
+						>
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path>
+								<path d="M16 6l-4-4-4 4M12 2v13"></path>
+							</svg>
+							Partager
+						</button>
 						if props.AlreadyFlagged {
 							@component.Badge(component.BadgeProps{Variant: component.BadgeSuccess}) {
 								Merci pour votre retour

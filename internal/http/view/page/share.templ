@@ -1,0 +1,95 @@
+package page
+
+// ShareModal est la fenêtre « Partager la conversation ». Deux états rendus par
+// le même gabarit et échangés dans #modal-root (PLAN-UX-CHAT §Phase 4.4) :
+//   - actif : le lien public (lecture seule) est affiché, copiable, avec un
+//     bouton « Rendre privé » qui révoque ;
+//   - inactif : la conversation n'est pas (ou plus) partagée, avec un bouton
+//     « Créer un lien de partage ».
+//
+// shareURL est l'URL publique absolue (cfg.Server.BaseURL + /share/{token}),
+// vide en état inactif.
+templ ShareModal(projectSlug, sessionID, shareURL string, active bool) {
+	<div class="edc-modal-backdrop">
+		<div class="edc-modal">
+			<div class="edc-modal__header">
+				<div>
+					<h3 class="edc-modal__title">Partager la conversation</h3>
+					<p class="edc-modal__subtitle">Lien public en lecture seule — instantané figé de la conversation</p>
+				</div>
+				<button type="button" class="edc-modal__close" onclick="document.getElementById('modal-root').innerHTML=''" aria-label="Fermer">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M18 6L6 18M6 6l12 12"></path>
+					</svg>
+				</button>
+			</div>
+			<div class="edc-modal__body">
+				if active {
+					<div class="edc-share">
+						<label class="edc-share__label" for="share-link">Lien de partage</label>
+						<div class="edc-share__row">
+							<input id="share-link" class="edc-share__input" type="text" value={ shareURL } readonly onclick="this.select()"/>
+							<button
+								type="button"
+								class="edc-message__action edc-share__copy"
+								data-edc-copy=""
+								data-edc-copy-text={ shareURL }
+								aria-label="Copier le lien"
+							>
+								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+									<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+								</svg>
+								<span class="edc-message__action-text" aria-live="polite">Copier</span>
+							</button>
+						</div>
+						<p class="edc-share__hint">
+							Toute personne disposant de ce lien peut consulter la conversation
+							telle qu'elle est aujourd'hui, sans se connecter. Les messages
+							échangés après le partage n'y apparaîtront pas.
+						</p>
+					</div>
+				} else {
+					<div class="edc-share">
+						<p class="edc-share__hint edc-share__hint--intro">
+							Cette conversation n'est pas partagée. Créez un lien public en
+							lecture seule pour la transmettre.
+						</p>
+					</div>
+				}
+			</div>
+			<div class="edc-modal__footer">
+				if active {
+					<button
+						type="button"
+						class="edc-btn edc-btn--danger edc-btn--md"
+						hx-post={ string(templ.SafeURL("/projects/" + projectSlug + "/chat/" + sessionID + "/share/revoke")) }
+						hx-target="#modal-root"
+						hx-swap="innerHTML"
+					>
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"></path>
+						</svg>
+						Supprimer le lien
+					</button>
+					<button type="button" class="edc-btn edc-btn--secondary edc-btn--md" onclick="document.getElementById('modal-root').innerHTML=''">
+						Fermer
+					</button>
+				} else {
+					<button type="button" class="edc-btn edc-btn--ghost edc-btn--md" onclick="document.getElementById('modal-root').innerHTML=''">
+						Annuler
+					</button>
+					<button
+						type="button"
+						class="edc-btn edc-btn--primary edc-btn--md"
+						hx-post={ string(templ.SafeURL("/projects/" + projectSlug + "/chat/" + sessionID + "/share")) }
+						hx-target="#modal-root"
+						hx-swap="innerHTML"
+					>
+						Créer un lien de partage
+					</button>
+				}
+			</div>
+		</div>
+	</div>
+}

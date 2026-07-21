@@ -33,7 +33,12 @@ type Handlers struct {
 	TicketService    *service.TicketService
 	HandoverService  *service.HandoverService
 	RelevanceService *service.RelevanceService
+	ShareService     *service.ShareService
 	Logger           *slog.Logger
+	// BaseURL est l'URL publique absolue du service (cfg.Server.BaseURL), sans
+	// slash final — utilisée pour composer les liens de partage
+	// (cf. ShareCreateHandler).
+	BaseURL string
 	// TicketCardsCache met en cache, avec TTL, le calcul coûteux des cartes
 	// de ticket (un appel backend par ticket) — cf. ticketCards et
 	// NewTicketCardsCache. À construire une seule fois pour tout le

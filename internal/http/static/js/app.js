@@ -341,14 +341,22 @@
         if (!btn) {
           return;
         }
-        const msg = btn.closest(".edc-message");
-        const tpl = msg && msg.querySelector(".edc-message__source");
-        if (!tpl) {
-          return;
+        // Deux sources possibles : un texte littéral porté par data-edc-copy-text
+        // (ex. lien de partage), ou — à défaut — la source Markdown du message
+        // exposée dans le <template> voisin.
+        let source;
+        if (btn.dataset.edcCopyText != null) {
+          source = btn.dataset.edcCopyText;
+        } else {
+          const msg = btn.closest(".edc-message");
+          const tpl = msg && msg.querySelector(".edc-message__source");
+          if (!tpl) {
+            return;
+          }
+          // Le navigateur décode le contenu échappé du <template> ; textContent
+          // restitue donc le Markdown d'origine.
+          source = tpl.content ? tpl.content.textContent : tpl.textContent;
         }
-        // Le navigateur décode le contenu échappé du <template> ; textContent
-        // restitue donc le Markdown d'origine.
-        const source = tpl.content ? tpl.content.textContent : tpl.textContent;
         copyText(source).then(
           function () {
             feedback(btn, "Copié !");

@@ -9,6 +9,7 @@ type (
 	MessageID        uint
 	TicketMappingID  uint
 	RelevanceFlagID  uint
+	ShareID          uint
 )
 
 // Identifiants des entités issues de la configuration YAML (clés stables,

@@ -63,12 +63,14 @@ func main() {
 	messages := gormrepo.NewMessageRepository(db)
 	ticketMappings := gormrepo.NewTicketMappingRepository(db)
 	relevanceFlags := gormrepo.NewRelevanceFlagRepository(db)
+	shares := gormrepo.NewShareRepository(db)
 
 	authService := service.NewAuthService(users)
 	chatService := service.NewChatService(sessions, messages, relevanceFlags, reg.ProjectByID, reg.Agents, reg.ChatAgents)
 	ticketService := service.NewTicketService(reg.TicketBackends, ticketMappings, reg.ProjectByID)
 	handoverService := service.NewHandoverService(sessions, messages, reg.ProjectByID, reg.Agents, reg.ChatAgents, ticketService)
 	relevanceService := service.NewRelevanceService(sessions, relevanceFlags)
+	shareService := service.NewShareService(shares, sessions, messages)
 
 	secure := strings.HasPrefix(cfg.Server.BaseURL, "https://")
 	sessionStore := auth.NewCookieSessionStore([]byte(cfg.Server.SessionSecret), users, secure)
@@ -93,6 +95,8 @@ func main() {
 		TicketService:           ticketService,
 		HandoverService:         handoverService,
 		RelevanceService:        relevanceService,
+		ShareService:            shareService,
+		BaseURL:                 cfg.Server.BaseURL,
 		Logger:                  logger,
 		TicketCardsCache:        handler.NewTicketCardsCache(),
 		StreamGenerationTimeout: time.Duration(generationTimeoutSeconds) * time.Second,
@@ -106,6 +110,7 @@ func main() {
 	mux.HandleFunc("GET /auth/{idp}/start", h.StartAuth)
 	mux.HandleFunc("GET /auth/{idp}/callback", h.Callback)
 	mux.HandleFunc("POST /logout", h.Logout)
+	mux.HandleFunc("GET /share/{token}", h.PublicShareHandler)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(static.Files)))
 
 	// Routes protégées — aucune ressource accessible sans session valide
@@ -124,6 +129,8 @@ func main() {
 	protected.HandleFunc("POST /projects/{slug}/chat/{sessionID}/handover/draft", h.HandoverDraftHandler)
 	protected.HandleFunc("POST /projects/{slug}/chat/{sessionID}/handover", h.HandoverSubmit)
 	protected.HandleFunc("POST /projects/{slug}/chat/{sessionID}/relevance", h.RelevanceFlagHandler)
+	protected.HandleFunc("POST /projects/{slug}/chat/{sessionID}/share", h.ShareCreateHandler)
+	protected.HandleFunc("POST /projects/{slug}/chat/{sessionID}/share/revoke", h.ShareRevokeHandler)
 
 	protected.HandleFunc("GET /projects/{slug}/tickets", h.TicketsList)
 	protected.HandleFunc("GET /projects/{slug}/tickets/new", h.NewTicketFormHandler)
