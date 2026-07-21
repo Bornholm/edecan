@@ -280,10 +280,11 @@ func writeAssistantFragment(w http.ResponseWriter, flusher http.Flusher, r *http
 }
 
 // writeStreamStatus met à jour la zone de statut de la bulle (event « status »)
-// avec un libellé d'activité ; un texte vide efface la zone.
-func writeStreamStatus(w http.ResponseWriter, flusher http.Flusher, r *http.Request, text string) {
+// avec un libellé d'activité ; un texte vide efface la zone. timed=true marque
+// un statut chronométré côté client (appel d'outil en cours).
+func writeStreamStatus(w http.ResponseWriter, flusher http.Flusher, r *http.Request, text string, timed bool) {
 	var buf bytes.Buffer
-	if err := page.AssistantStreamStatus(text).Render(r.Context(), &buf); err != nil {
+	if err := page.AssistantStreamStatus(text, timed).Render(r.Context(), &buf); err != nil {
 		return
 	}
 	writeSSE(w, flusher, "status", buf.String())
@@ -402,7 +403,7 @@ loop:
 				break loop
 			case chunk.Stage != "":
 				if !statusCleared {
-					writeStreamStatus(w, flusher, r, statusLabel(chunk.Stage))
+					writeStreamStatus(w, flusher, r, statusLabel(chunk.Stage), false)
 				}
 			case chunk.Reasoning != "":
 				// Raisonnement (« thinking ») : accumulé et ré-affiché dans la
@@ -416,7 +417,7 @@ loop:
 				// Premier contenu : on efface la zone de statut, la bulle prend
 				// le relais visuel.
 				if !statusCleared {
-					writeStreamStatus(w, flusher, r, "")
+					writeStreamStatus(w, flusher, r, "", false)
 					statusCleared = true
 				}
 				writeAssistantFragment(w, flusher, r, content.String(), reasoning.String(), tools, !chunk.Done)
@@ -436,13 +437,13 @@ loop:
 
 	if fatalErr != nil {
 		h.Logger.ErrorContext(ctx, "streaming LLM interrompu", "error", fatalErr)
-		writeStreamStatus(w, flusher, r, "")
+		writeStreamStatus(w, flusher, r, "", false)
 		writeStreamError(w, flusher, r, slug, sessionIDStr, friendlyStreamError(fatalErr))
 		writeSSE(w, flusher, "done", "erreur")
 		return
 	}
 
-	writeStreamStatus(w, flusher, r, "")
+	writeStreamStatus(w, flusher, r, "", false)
 	if content.Len() == 0 {
 		// Fin propre mais aucune réponse produite : on n'a rien à persister,
 		// mieux vaut proposer un retry qu'une bulle vide.
@@ -468,12 +469,12 @@ func (h *Handlers) handleToolChunk(w http.ResponseWriter, flusher http.Flusher, 
 	case port.ToolPhaseStart:
 		*tools = append(*tools, tool.Name)
 		writeAssistantFragment(w, flusher, r, content.String(), reasoning.String(), *tools, true)
-		writeStreamStatus(w, flusher, r, fmt.Sprintf("Utilise l'outil « %s »…", tool.Name))
+		writeStreamStatus(w, flusher, r, fmt.Sprintf("Utilise l'outil « %s »…", tool.Name), true)
 	case port.ToolPhaseEnd:
 		if tool.Err != nil {
-			writeStreamStatus(w, flusher, r, fmt.Sprintf("L'outil « %s » est indisponible, l'agent poursuit…", tool.Name))
+			writeStreamStatus(w, flusher, r, fmt.Sprintf("L'outil « %s » est indisponible, l'agent poursuit…", tool.Name), false)
 		} else {
-			writeStreamStatus(w, flusher, r, "Analyse des résultats…")
+			writeStreamStatus(w, flusher, r, "Analyse des résultats…", false)
 		}
 	}
 }

@@ -241,12 +241,17 @@ templ AssistantStreamPlaceholder(projectSlug, sessionID string) {
 
 // AssistantStreamStatus rend le libellé de la zone de statut d'un flux en
 // cours (event SSE « status »). Un texte vide efface la zone (fin de flux ou
-// premier token de contenu).
-templ AssistantStreamStatus(text string) {
+// premier token de contenu). timed marque un statut à chronométrer côté client
+// (appel d'outil en cours) : app.js repère data-edc-timer et incrémente le
+// compteur « · depuis N s » dans data-edc-elapsed, sans dépendre du réseau.
+templ AssistantStreamStatus(text string, timed bool) {
 	if text != "" {
-		<span class="edc-stream-status__text">
+		<span class="edc-stream-status__text" data-edc-timer?={ timed }>
 			<span class="edc-stream-status__spinner" aria-hidden="true"></span>
-			{ text }
+			<span>{ text }</span>
+			if timed {
+				<span class="edc-stream-status__elapsed" data-edc-elapsed=""></span>
+			}
 		</span>
 	}
 }

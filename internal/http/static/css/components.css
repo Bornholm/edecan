@@ -506,6 +506,41 @@
   padding: 0 2px;
 }
 
+/* Indicateur « trois points » affiché dans la bulle tant qu'aucun token n'est
+   arrivé (l'agent réfléchit), remplacé par le curseur de frappe au premier
+   fragment de contenu (cf. component.ChatMessage). */
+.edc-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+.edc-typing__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fg-3);
+  animation: edc-typing-bounce 1.3s ease-in-out infinite;
+}
+.edc-typing__dot:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.edc-typing__dot:nth-child(3) {
+  animation-delay: 0.36s;
+}
+@keyframes edc-typing-bounce {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
 /* Retour visuel des appels d'outils MCP au-dessus de la bulle assistant
    (cf. component.ChatMessage, handler.StreamReply). */
 .edc-tools {
@@ -562,6 +597,12 @@
   color: var(--fg-3);
   padding: 2px 2px 6px;
 }
+/* Compteur « · depuis N s » incrémenté côté client pendant un appel d'outil
+   (cf. app.js module stream). */
+.edc-stream-status__elapsed {
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-2);
+}
 .edc-stream-status__spinner {
   width: 11px;
   height: 11px;
@@ -604,6 +645,27 @@
 .edc-stream-error__msg {
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
+}
+
+/* Bandeau discret affiché pendant une reconnexion SSE automatique (cf. app.js
+   module reconnect). */
+.edc-stream-reconnect {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-xs);
+  color: var(--fg-3);
+  padding: 4px 2px 8px;
+}
+.edc-stream-reconnect::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--border-default);
+  border-top-color: var(--fg-3);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: edc-spin 0.7s linear infinite;
 }
 
 /* Section de raisonnement (« thinking ») repliable au-dessus de la bulle
@@ -1355,6 +1417,35 @@ html[data-theme="light"] .edc-theme-icon--moon {
   flex-direction: column;
   gap: var(--space-3);
 }
+/* Bouton flottant « Nouveaux messages » : collé (sticky) au bas de la zone
+   scrollable, visible seulement quand l'utilisateur a remonté l'historique
+   pendant qu'un message arrive (cf. app.js module autoscroll). */
+.edc-scroll-bottom {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: none;
+  margin: 0 auto;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-md);
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.edc-scroll-bottom:hover {
+  background: var(--bg-surface);
+}
+.edc-scroll-bottom--visible {
+  display: flex;
+}
 .edc-chat__composer-wrap {
   padding: 12px 24px 16px;
   border-top: 1px solid var(--border-subtle);
@@ -1404,6 +1495,17 @@ html[data-theme="light"] .edc-theme-icon--moon {
 }
 .edc-chat__composer-send:hover {
   background: var(--color-primary-hover);
+}
+/* Composer bloqué pendant la génération (cf. app.js module composer) : rien
+   n'est saisissable ni envoyable tant que l'agent répond. */
+.edc-chat__composer--busy {
+  opacity: 0.6;
+}
+.edc-chat__composer-send:disabled {
+  cursor: not-allowed;
+}
+.edc-chat__composer-input:disabled {
+  cursor: not-allowed;
 }
 
 /* ── Login (page d'accueil avant authentification) ── */

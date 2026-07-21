@@ -109,7 +109,18 @@ templ ChatMessage(props ChatMessageProps) {
 				<div class="edc-message__bubble edc-prose">
 					@templ.Raw(messageBodyHTML(props.Content))
 					if props.IsStreaming {
-						<span class="edc-message__cursor"></span>
+						if props.Content == "" {
+							// Aucun token encore reçu : indicateur « trois points »
+							// signalant que l'agent réfléchit, remplacé par le curseur
+							// de frappe dès le premier fragment de contenu.
+							<span class="edc-typing" role="status" aria-label="L'agent rédige une réponse">
+								<span class="edc-typing__dot"></span>
+								<span class="edc-typing__dot"></span>
+								<span class="edc-typing__dot"></span>
+							</span>
+						} else {
+							<span class="edc-message__cursor"></span>
+						}
 					}
 				</div>
 				if props.Timestamp != "" {
