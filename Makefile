@@ -76,3 +76,5 @@ goreleaser: tools/goreleaser/bin/goreleaser
 
 config.yaml:
 	cp config.yaml.dist config.yaml
+
+include misc/*/*.mk

@@ -1,0 +1,46 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: edecan
+    targets: [go_first_class]
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    dir: ./cmd/edecan
+    binary: edecan
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -w -s -X 'edecan/internal/build.ShortVersion={{ .Version }}' -X 'edecan/internal/build.LongVersion={{ .Version }}'
+
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+release:
+  name_template: "v{{ .Version }}"
+
+dockers_v2:
+  - id: edecan
+    ids:
+      - edecan
+    dockerfile: misc/docker/edecan.Dockerfile
+    images:
+      - ghcr.io/{{ tolower ( .Env.REPO_OWNER ) }}/edecan
+    tags:
+      - "{{ .Version }}"
+      - latest
+    platforms:
+      - linux/amd64
+      - linux/arm64

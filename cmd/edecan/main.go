@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"edecan/internal/auth"
+	"edecan/internal/build"
 	"edecan/internal/config"
 	"edecan/internal/core/service"
 	"edecan/internal/http/handler"
@@ -28,6 +29,7 @@ func main() {
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger.Info("edecán", "version", build.ShortVersion, "build", build.LongVersion)
 
 	if *envPath != "" {
 		// godotenv.Load ne remplace pas les variables déjà présentes dans

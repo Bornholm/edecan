@@ -1,0 +1,8 @@
+.git
+bin/
+dist/
+tools/
+*.db
+*.db-*
+.env
+config.yaml
