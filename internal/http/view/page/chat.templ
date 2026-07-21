@@ -119,6 +119,7 @@ templ Chat(props ChatProps) {
 		} else {
 			<div class="edc-chat">
 				<div class="edc-chat-header">
+					<div class="edc-chat-header__inner">
 					<div style="min-width:0;">
 						<div class="edc-chat-header__title">
 							if props.CurrentSession.Title != "" {
@@ -168,13 +169,17 @@ templ Chat(props ChatProps) {
 							</button>
 						}
 					</div>
+					</div>
 				</div>
-				<div id="messages" class="edc-chat__messages">
-					for _, m := range props.Messages {
-						@component.ChatMessage(m)
-					}
+				<div class="edc-chat__messages">
+					<div id="messages" class="edc-chat__messages-inner">
+						for _, m := range props.Messages {
+							@component.ChatMessage(m)
+						}
+					</div>
 				</div>
 				<div class="edc-chat__composer-wrap">
+					<div class="edc-chat__composer-inner">
 					<form
 						class="edc-chat__composer"
 						hx-post={ string(templ.SafeURL(sessionHref(props.ProjectSlug, props.CurrentSession.ID) + "/messages")) }
@@ -197,6 +202,7 @@ templ Chat(props ChatProps) {
 							</svg>
 						</button>
 					</form>
+					</div>
 				</div>
 			</div>
 		}

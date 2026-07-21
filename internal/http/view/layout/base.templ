@@ -6,8 +6,10 @@ package layout
 // data-theme="light", cf. tokens/colors.css), polices Figtree/JetBrains Mono,
 // HTMX pour le streaming et les fragments (PLAN.md §Phase 7).
 //
-// TODO(prod): vendorer htmx.org localement plutôt que de dépendre d'un CDN,
-// pour la conformité CSP et la disponibilité hors-ligne.
+// htmx et son extension SSE sont vendorisés sous /static/js (cf.
+// internal/http/static) plutôt que servis depuis un CDN : conformité CSP,
+// disponibilité hors-ligne, absence de dépendance réseau externe. app.js porte
+// le JavaScript applicatif (feedback de streaming, copie, partage…).
 templ Base(title string) {
 	<!DOCTYPE html>
 	<html lang="fr" data-theme="dark">
@@ -30,8 +32,9 @@ templ Base(title string) {
 				}
 			</script>
 			<link rel="stylesheet" href="/static/css/styles.css"/>
-			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
-			<script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+			<script src="/static/js/htmx.min.js"></script>
+			<script src="/static/js/sse.js"></script>
+			<script src="/static/js/app.js" defer></script>
 		</head>
 		<body>
 			{ children... }
