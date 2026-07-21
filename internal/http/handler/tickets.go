@@ -191,7 +191,7 @@ func (h *Handlers) TicketsList(w http.ResponseWriter, r *http.Request) {
 	user := currentUser(r)
 	ctx := r.Context()
 
-	project, role, err := h.projectAndRole(ctx, slug, user)
+	project, role, err := h.ticketProjectAndRole(ctx, slug, user)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
@@ -218,6 +218,10 @@ func (h *Handlers) TicketsList(w http.ResponseWriter, r *http.Request) {
 // (SPEC §Tickets, point 20).
 func (h *Handlers) NewTicketFormHandler(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
+	if !h.ticketsEnabled(slug) {
+		http.NotFound(w, r)
+		return
+	}
 	render(w, r, page.NewTicketModal(slug, ""))
 }
 
@@ -234,7 +238,7 @@ func (h *Handlers) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	user := currentUser(r)
 	ctx := r.Context()
 
-	project, role, err := h.projectAndRole(ctx, slug, user)
+	project, role, err := h.ticketProjectAndRole(ctx, slug, user)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
@@ -298,7 +302,7 @@ func (h *Handlers) TicketDetailHandler(w http.ResponseWriter, r *http.Request) {
 	user := currentUser(r)
 	ctx := r.Context()
 
-	project, role, err := h.projectAndRole(ctx, slug, user)
+	project, role, err := h.ticketProjectAndRole(ctx, slug, user)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
@@ -403,7 +407,7 @@ func (h *Handlers) AddCommentHandler(w http.ResponseWriter, r *http.Request) {
 	user := currentUser(r)
 	ctx := r.Context()
 
-	project, role, err := h.projectAndRole(ctx, slug, user)
+	project, role, err := h.ticketProjectAndRole(ctx, slug, user)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
@@ -458,7 +462,7 @@ func (h *Handlers) DownloadAttachmentHandler(w http.ResponseWriter, r *http.Requ
 	user := currentUser(r)
 	ctx := r.Context()
 
-	project, role, err := h.projectAndRole(ctx, slug, user)
+	project, role, err := h.ticketProjectAndRole(ctx, slug, user)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
@@ -489,7 +493,7 @@ func (h *Handlers) SetStatusHandler(w http.ResponseWriter, r *http.Request) {
 	user := currentUser(r)
 	ctx := r.Context()
 
-	project, role, err := h.projectAndRole(ctx, slug, user)
+	project, role, err := h.ticketProjectAndRole(ctx, slug, user)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return

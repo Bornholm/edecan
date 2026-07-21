@@ -156,8 +156,13 @@ func (c *Config) Validate() error {
 		if _, ok := agents[p.Agent]; !ok {
 			return fmt.Errorf("projet %q: agent %q introuvable", p.Slug, p.Agent)
 		}
-		if _, ok := backends[p.TicketBackend]; !ok {
-			return fmt.Errorf("projet %q: ticket_backend %q introuvable", p.Slug, p.TicketBackend)
+		// ticket_backend est optionnel : laissé vide, le projet ne propose que
+		// l'interface de chat (projet « chat-only »). Renseigné, il doit
+		// référencer un backend déclaré.
+		if p.TicketBackend != "" {
+			if _, ok := backends[p.TicketBackend]; !ok {
+				return fmt.Errorf("projet %q: ticket_backend %q introuvable", p.Slug, p.TicketBackend)
+			}
 		}
 		if len(p.Membership) == 0 {
 			return fmt.Errorf("projet %q: au moins une règle membership est requise", p.Slug)

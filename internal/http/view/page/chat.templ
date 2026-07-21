@@ -25,6 +25,10 @@ type ChatProps struct {
 	CurrentSession    *SessionEntry
 	Messages          []component.ChatMessageProps
 	AlreadyFlagged    bool
+	// HasTickets indique que le projet est adossé à un backend de tickets.
+	// Faux ⇒ projet chat-only : la navigation Tickets du rail et l'action
+	// « Transformer en ticket » sont masquées (cf. model.Project.HasTicketBackend).
+	HasTickets        bool
 	ActiveTicketCount int
 }
 
@@ -95,6 +99,7 @@ templ Chat(props ChatProps) {
 		ProjectSlug:       props.ProjectSlug,
 		Projects:          props.Projects,
 		ActiveNav:         "chat",
+		HasTickets:        props.HasTickets,
 		ActiveTicketCount: props.ActiveTicketCount,
 		Sidebar:           chatSidebar(props),
 	}) {
@@ -170,7 +175,7 @@ templ Chat(props ChatProps) {
 								Utile
 							</button>
 						}
-						if props.CurrentSession.TicketRef == "" {
+						if props.HasTickets && props.CurrentSession.TicketRef == "" {
 							<button
 								class="edc-btn edc-btn--primary-subtle edc-btn--sm"
 								type="button"

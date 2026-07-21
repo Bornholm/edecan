@@ -95,6 +95,31 @@ func (h *Handlers) projectAndRole(ctx context.Context, slug string, user *model.
 	return project, role, nil
 }
 
+// ticketProjectAndRole résout le projet et le rôle comme projectAndRole, mais
+// échoue avec service.ErrNotFound si le projet est « chat-only » (aucun
+// backend de tickets). Utilisé par toutes les routes tickets/handover : ces
+// ressources ne doivent pas exister pour un projet sans backend, même si un
+// utilisateur en devine l'URL.
+func (h *Handlers) ticketProjectAndRole(ctx context.Context, slug string, user *model.User) (model.Project, model.Role, error) {
+	project, role, err := h.projectAndRole(ctx, slug, user)
+	if err != nil {
+		return model.Project{}, "", err
+	}
+	if !project.HasTicketBackend() {
+		return model.Project{}, "", service.ErrNotFound
+	}
+	return project, role, nil
+}
+
+// ticketsEnabled indique si le projet slug propose la gestion de tickets
+// (backend configuré). Utilisé par les handlers handover, qui ne résolvent
+// pas le projet via projectAndRole mais doivent malgré tout refuser un projet
+// chat-only.
+func (h *Handlers) ticketsEnabled(slug string) bool {
+	project, ok := h.Registry.ProjectByID[model.ProjectID(slug)]
+	return ok && project.HasTicketBackend()
+}
+
 // projectOptions liste les projets accessibles à user, pour le sélecteur de
 // projet du rail (cf. layout.Shell) — il n'y a pas de page dédiée pour
 // changer de projet.

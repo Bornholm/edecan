@@ -302,7 +302,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(props.Ref)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 183, Col: 18}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 184, Col: 18}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -316,7 +316,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(" · " + props.ProjectName)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 185, Col: 35}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 186, Col: 35}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -340,7 +340,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(props.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 192, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 193, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -358,7 +358,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 				var templ_7745c5c3_Var11 templ.SafeURL
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets/" + props.Ref + "/status"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 196, Col: 119}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 197, Col: 119}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -403,7 +403,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 				var templ_7745c5c3_Var13 templ.SafeURL
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets/" + props.Ref + "/status"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 204, Col: 119}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 205, Col: 119}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -457,7 +457,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(ticketCommentInitials(props.RequesterName))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 220, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 221, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -470,7 +470,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(props.RequesterName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 222, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 223, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -483,7 +483,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(props.RequesterCreatedAt)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 223, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 224, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -544,7 +544,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 					var templ_7745c5c3_Var20 string
 					templ_7745c5c3_Var20, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues("background:" + ticketCommentAvatarColor(c.Author) + "22;border:1px solid " + ticketCommentAvatarColor(c.Author) + "44;color:" + ticketCommentAvatarColor(c.Author))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 235, Col: 178}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 236, Col: 178}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 					if templ_7745c5c3_Err != nil {
@@ -562,7 +562,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(ticketCommentInitials(c.Author))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 238, Col: 39}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 239, Col: 39}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
@@ -575,7 +575,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(c.Author)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 242, Col: 58}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 243, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 				if templ_7745c5c3_Err != nil {
@@ -601,7 +601,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 						var templ_7745c5c3_Var24 string
 						templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(commentRoleLabel(c.Role))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 245, Col: 35}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 246, Col: 35}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 						if templ_7745c5c3_Err != nil {
@@ -621,7 +621,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 				var templ_7745c5c3_Var25 string
 				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(c.CreatedAt)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 248, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 249, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 				if templ_7745c5c3_Err != nil {
@@ -656,7 +656,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 				var templ_7745c5c3_Var26 templ.SafeURL
 				templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets/" + props.Ref + "/comments"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 262, Col: 101}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 263, Col: 101}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 				if templ_7745c5c3_Err != nil {
@@ -669,7 +669,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 				var templ_7745c5c3_Var27 string
 				templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(ticketCommentInitials(props.UserDisplayName))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 265, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/ticket_detail.templ`, Line: 266, Col: 52}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 				if templ_7745c5c3_Err != nil {
@@ -728,6 +728,7 @@ func TicketDetail(props TicketDetailProps) templ.Component {
 			ProjectSlug:       props.ProjectSlug,
 			Projects:          props.Projects,
 			ActiveNav:         "tickets",
+			HasTickets:        true,
 			ActiveTicketCount: props.ActiveTicketCount,
 			Sidebar:           ticketsSidebar(props.ProjectSlug, props.Cards),
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var6), templ_7745c5c3_Buffer)

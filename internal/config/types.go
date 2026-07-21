@@ -207,7 +207,9 @@ type MembershipRule struct {
 }
 
 // ProjectConfig décrit un espace de support : agent, backend de tickets et
-// règles d'appartenance utilisateur.
+// règles d'appartenance utilisateur. TicketBackend est optionnel : laissé
+// vide, le projet ne propose que l'interface de chat (pas de tickets ni de
+// handover) — cf. model.Project.HasTicketBackend.
 type ProjectConfig struct {
 	Slug          string           `yaml:"slug"`
 	Name          string           `yaml:"name"`

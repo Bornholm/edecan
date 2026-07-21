@@ -7,8 +7,10 @@ type MembershipRule struct {
 	Role    Role
 }
 
-// Project est un espace de support configuré, associé à un agent, un
-// backend de tickets et des règles d'appartenance utilisateur.
+// Project est un espace de support configuré, associé à un agent et des
+// règles d'appartenance utilisateur. Le backend de tickets est optionnel :
+// laissé vide, le projet ne propose que l'interface de chat (pas de tickets
+// ni de handover) — cf. HasTicketBackend.
 // Les projets sont définis dans la configuration YAML — ce ne sont pas des
 // entités persistées en base (cf. SPEC §Configuration).
 type Project struct {
@@ -17,6 +19,13 @@ type Project struct {
 	AgentID       AgentID
 	TicketBackend TicketBackendID
 	Membership    []MembershipRule
+}
+
+// HasTicketBackend indique si le projet est adossé à un backend de tickets.
+// Un projet sans backend est « chat-only » : toute l'UI et les routes liées
+// aux tickets (liste, détail, handover) sont désactivées pour lui.
+func (p Project) HasTicketBackend() bool {
+	return p.TicketBackend != ""
 }
 
 // RoleFor résout le rôle d'un email pour ce projet. ok est false si aucune

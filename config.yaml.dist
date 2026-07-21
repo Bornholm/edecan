@@ -175,3 +175,11 @@ projects:
         role: support
       - pattern: "*@exemple.com"
         role: user
+  # Projet « chat-only » : ticket_backend omis ⇒ seule l'interface de chat est
+  # proposée (ni liste de tickets, ni « Transformer en ticket »).
+  - slug: assistant-simple
+    name: "Assistant — Sans tickets"
+    agent: support-generaliste
+    membership:
+      - pattern: "*@exemple.com"
+        role: user

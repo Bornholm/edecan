@@ -71,10 +71,15 @@ func (h *Handlers) ChatHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cards, err := h.ticketCards(ctx, slug, project, user, role, "")
-	if err != nil {
-		writeServiceError(w, r, err)
-		return
+	// Un projet chat-only n'a pas de tickets : on n'appelle pas le backend.
+	var activeTicketCount int
+	if project.HasTicketBackend() {
+		cards, err := h.ticketCards(ctx, slug, project, user, role, "")
+		if err != nil {
+			writeServiceError(w, r, err)
+			return
+		}
+		activeTicketCount = countActiveTickets(cards)
 	}
 
 	render(w, r, page.Chat(page.ChatProps{
@@ -84,7 +89,8 @@ func (h *Handlers) ChatHome(w http.ResponseWriter, r *http.Request) {
 		UserRoleLabel:     userRoleLabel(role, project.Name),
 		Projects:          h.projectOptions(user),
 		Sessions:          buildSessionEntries(sessions, ""),
-		ActiveTicketCount: countActiveTickets(cards),
+		HasTickets:        project.HasTicketBackend(),
+		ActiveTicketCount: activeTicketCount,
 	}))
 }
 
@@ -182,10 +188,15 @@ func (h *Handlers) SessionView(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, r, err)
 		return
 	}
-	cards, err := h.ticketCards(ctx, slug, project, user, role, "")
-	if err != nil {
-		writeServiceError(w, r, err)
-		return
+	// Un projet chat-only n'a pas de tickets : on n'appelle pas le backend.
+	var activeTicketCount int
+	if project.HasTicketBackend() {
+		cards, err := h.ticketCards(ctx, slug, project, user, role, "")
+		if err != nil {
+			writeServiceError(w, r, err)
+			return
+		}
+		activeTicketCount = countActiveTickets(cards)
 	}
 
 	entries := buildSessionEntries(sessions, sessionIDStr)
@@ -203,7 +214,8 @@ func (h *Handlers) SessionView(w http.ResponseWriter, r *http.Request) {
 		UserRoleLabel:     userRoleLabel(role, project.Name),
 		Projects:          h.projectOptions(user),
 		Sessions:          entries,
-		ActiveTicketCount: countActiveTickets(cards),
+		HasTickets:        project.HasTicketBackend(),
+		ActiveTicketCount: activeTicketCount,
 		CurrentSession:    &current,
 		Messages:          buildMessageProps(messages, user.DisplayName),
 		AlreadyFlagged:    flagged,
@@ -514,6 +526,12 @@ func (h *Handlers) HandoverModalHandler(w http.ResponseWriter, r *http.Request) 
 	user := currentUser(r)
 	ctx := r.Context()
 
+	// Le handover produit un ticket : indisponible pour un projet chat-only.
+	if !h.ticketsEnabled(slug) {
+		http.NotFound(w, r)
+		return
+	}
+
 	sessionID, err := parseSessionID(sessionIDStr)
 	if err != nil {
 		http.NotFound(w, r)
@@ -539,6 +557,12 @@ func (h *Handlers) HandoverDraftHandler(w http.ResponseWriter, r *http.Request) 
 	sessionIDStr := r.PathValue("sessionID")
 	user := currentUser(r)
 	ctx := r.Context()
+
+	// Le handover produit un ticket : indisponible pour un projet chat-only.
+	if !h.ticketsEnabled(slug) {
+		http.NotFound(w, r)
+		return
+	}
 
 	sessionID, err := parseSessionID(sessionIDStr)
 	if err != nil {
@@ -575,6 +599,12 @@ func (h *Handlers) HandoverSubmit(w http.ResponseWriter, r *http.Request) {
 	sessionIDStr := r.PathValue("sessionID")
 	user := currentUser(r)
 	ctx := r.Context()
+
+	// Le handover produit un ticket : indisponible pour un projet chat-only.
+	if !h.ticketsEnabled(slug) {
+		http.NotFound(w, r)
+		return
+	}
 
 	sessionID, err := parseSessionID(sessionIDStr)
 	if err != nil {

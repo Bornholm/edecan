@@ -26,6 +26,10 @@ type ShellProps struct {
 	// dédiée pour changer de projet).
 	Projects  []ProjectOption
 	ActiveNav string // "chat" | "tickets"
+	// HasTickets indique que le projet courant est adossé à un backend de
+	// tickets. Faux ⇒ projet chat-only : l'entrée de navigation Tickets est
+	// masquée (cf. model.Project.HasTicketBackend).
+	HasTickets bool
 	// ActiveTicketCount alimente le badge de la navigation Tickets — 0 ⇒
 	// badge masqué. Calculé à chaque rendu de page complète (Chat ou
 	// Tickets), jamais lors d'un fragment htmx (ex. PostMessage), pour ne
@@ -116,18 +120,20 @@ templ Shell(props ShellProps) {
 							</svg>
 							<span class="edc-rail__navitem-label">Sessions</span>
 						</a>
-						<a
-							class={ "edc-rail__navitem", templ.KV("edc-rail__navitem--active", props.ActiveNav == "tickets") }
-							href={ templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets") }
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-							</svg>
-							<span class="edc-rail__navitem-label">Tickets</span>
-							if props.ActiveTicketCount > 0 {
-								<span class="edc-rail__navitem-badge">{ strconv.Itoa(props.ActiveTicketCount) }</span>
-							}
-						</a>
+						if props.HasTickets {
+							<a
+								class={ "edc-rail__navitem", templ.KV("edc-rail__navitem--active", props.ActiveNav == "tickets") }
+								href={ templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets") }
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+								</svg>
+								<span class="edc-rail__navitem-label">Tickets</span>
+								if props.ActiveTicketCount > 0 {
+									<span class="edc-rail__navitem-badge">{ strconv.Itoa(props.ActiveTicketCount) }</span>
+								}
+							</a>
+						}
 					</nav>
 				}
 				<div class="edc-rail__list">

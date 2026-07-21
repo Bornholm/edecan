@@ -131,6 +131,7 @@ func Tickets(props TicketsProps) templ.Component {
 			ProjectSlug:       props.ProjectSlug,
 			Projects:          props.Projects,
 			ActiveNav:         "tickets",
+			HasTickets:        true,
 			ActiveTicketCount: props.ActiveTicketCount,
 			Sidebar:           ticketsSidebar(props.ProjectSlug, props.Cards),
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
@@ -226,7 +227,7 @@ func NewTicketFormFragment(projectSlug, errorMessage string) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL("/projects/" + projectSlug + "/tickets")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/tickets.templ`, Line: 107, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/tickets.templ`, Line: 108, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 		if templ_7745c5c3_Err != nil {

@@ -24,15 +24,19 @@ type SessionEntry struct {
 
 // ChatProps configure la page Chat.
 type ChatProps struct {
-	ProjectSlug       string
-	ProjectName       string
-	UserDisplayName   string
-	UserRoleLabel     string
-	Projects          []layout.ProjectOption
-	Sessions          []SessionEntry
-	CurrentSession    *SessionEntry
-	Messages          []component.ChatMessageProps
-	AlreadyFlagged    bool
+	ProjectSlug     string
+	ProjectName     string
+	UserDisplayName string
+	UserRoleLabel   string
+	Projects        []layout.ProjectOption
+	Sessions        []SessionEntry
+	CurrentSession  *SessionEntry
+	Messages        []component.ChatMessageProps
+	AlreadyFlagged  bool
+	// HasTickets indique que le projet est adossé à un backend de tickets.
+	// Faux ⇒ projet chat-only : la navigation Tickets du rail et l'action
+	// « Transformer en ticket » sont masquées (cf. model.Project.HasTicketBackend).
+	HasTickets        bool
 	ActiveTicketCount int
 }
 
@@ -69,7 +73,7 @@ func chatSidebar(props ChatProps) templ.Component {
 		var templ_7745c5c3_Var2 templ.SafeURL
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/projects/" + props.ProjectSlug + "/chat/sessions"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 39, Col: 97}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 43, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -111,7 +115,7 @@ func chatSidebar(props ChatProps) templ.Component {
 				var templ_7745c5c3_Var5 templ.SafeURL
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(sessionHref(props.ProjectSlug, s.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 52, Col: 96}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 56, Col: 96}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -125,7 +129,7 @@ func chatSidebar(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(s.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 56, Col: 17}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 60, Col: 17}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -139,7 +143,7 @@ func chatSidebar(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(s.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 58, Col: 23}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 62, Col: 23}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {
@@ -158,7 +162,7 @@ func chatSidebar(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var8 string
 					templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(s.TicketRef)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 64, Col: 89}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 68, Col: 89}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 					if templ_7745c5c3_Err != nil {
@@ -181,7 +185,7 @@ func chatSidebar(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var9 templ.SafeURL
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(sessionHref(props.ProjectSlug, s.ID) + "/delete"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 71, Col: 78}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 75, Col: 78}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -246,7 +250,7 @@ func Chat(props ChatProps) templ.Component {
 				var templ_7745c5c3_Var12 templ.SafeURL
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/projects/" + props.ProjectSlug + "/chat/sessions"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 110, Col: 99}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 115, Col: 99}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -265,7 +269,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var13 string
 					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(props.CurrentSession.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 126, Col: 36}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 131, Col: 36}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 					if templ_7745c5c3_Err != nil {
@@ -279,7 +283,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(props.CurrentSession.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 128, Col: 42}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 133, Col: 42}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -298,7 +302,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var15 templ.SafeURL
 					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets/" + props.CurrentSession.TicketRef))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 135, Col: 149}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 140, Col: 149}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 					if templ_7745c5c3_Err != nil {
@@ -311,7 +315,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var16 string
 					templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(props.CurrentSession.TicketRef)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 136, Col: 49}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 141, Col: 49}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 					if templ_7745c5c3_Err != nil {
@@ -329,7 +333,7 @@ func Chat(props ChatProps) templ.Component {
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL(sessionHref(props.ProjectSlug, props.CurrentSession.ID) + "/share")))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 145, Col: 106}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 150, Col: 106}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 				if templ_7745c5c3_Err != nil {
@@ -370,7 +374,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var19 string
 					templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL(sessionHref(props.ProjectSlug, props.CurrentSession.ID) + "/relevance")))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 163, Col: 111}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 168, Col: 111}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 					if templ_7745c5c3_Err != nil {
@@ -381,7 +385,7 @@ func Chat(props ChatProps) templ.Component {
 						return templ_7745c5c3_Err
 					}
 				}
-				if props.CurrentSession.TicketRef == "" {
+				if props.HasTickets && props.CurrentSession.TicketRef == "" {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<button class=\"edc-btn edc-btn--primary-subtle edc-btn--sm\" type=\"button\" hx-get=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -389,7 +393,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var20 string
 					templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL(sessionHref(props.ProjectSlug, props.CurrentSession.ID) + "/handover/modal")))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 177, Col: 115}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 182, Col: 115}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 					if templ_7745c5c3_Err != nil {
@@ -417,7 +421,7 @@ func Chat(props ChatProps) templ.Component {
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL(sessionHref(props.ProjectSlug, props.CurrentSession.ID) + "/messages")))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 198, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 203, Col: 108}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 				if templ_7745c5c3_Err != nil {
@@ -438,6 +442,7 @@ func Chat(props ChatProps) templ.Component {
 			ProjectSlug:       props.ProjectSlug,
 			Projects:          props.Projects,
 			ActiveNav:         "chat",
+			HasTickets:        props.HasTickets,
 			ActiveTicketCount: props.ActiveTicketCount,
 			Sidebar:           chatSidebar(props),
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var11), templ_7745c5c3_Buffer)
@@ -487,7 +492,7 @@ func AssistantStreamPlaceholder(projectSlug, sessionID string) templ.Component {
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue("/projects/" + projectSlug + "/chat/" + sessionID + "/stream")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 239, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 244, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 		if templ_7745c5c3_Err != nil {
@@ -553,7 +558,7 @@ func AssistantStreamStatus(text string, timed bool) templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 264, Col: 15}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 269, Col: 15}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -609,7 +614,7 @@ func AssistantStreamError(projectSlug, sessionID, message string) templ.Componen
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 282, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 287, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
@@ -622,7 +627,7 @@ func AssistantStreamError(projectSlug, sessionID, message string) templ.Componen
 		var templ_7745c5c3_Var28 string
 		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL(sessionHref(projectSlug, sessionID) + "/retry")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 286, Col: 83}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 291, Col: 83}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var28)
 		if templ_7745c5c3_Err != nil {
@@ -719,7 +724,7 @@ func HandoverModal(projectSlug, sessionID string) templ.Component {
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL("/projects/" + projectSlug + "/chat/" + sessionID + "/handover/draft")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 331, Col: 106}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 336, Col: 106}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 		if templ_7745c5c3_Err != nil {
@@ -779,7 +784,7 @@ func HandoverDraftFragment(projectSlug, sessionID, title, body, errorMessage str
 		var templ_7745c5c3_Var34 string
 		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL("/projects/" + projectSlug + "/chat/" + sessionID + "/handover")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 364, Col: 98}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 369, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
 		if templ_7745c5c3_Err != nil {
