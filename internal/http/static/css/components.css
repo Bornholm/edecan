@@ -506,6 +506,48 @@
   padding: 0 2px;
 }
 
+/* Actions de message (copie Markdown) : révélées au survol de la bulle ou au
+   focus clavier ; alignées comme la colonne (droite pour User, gauche pour
+   l'agent). cf. component.ChatMessage + app.js module copy. */
+.edc-message__actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+.edc-message:hover .edc-message__actions,
+.edc-message__actions:focus-within {
+  opacity: 1;
+}
+.edc-message__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  color: var(--fg-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  transition: color var(--transition-fast), background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+.edc-message__action:hover {
+  color: var(--fg-1);
+  background: var(--bg-surface);
+  border-color: var(--border-default);
+}
+.edc-message__action svg {
+  width: 15px;
+  height: 15px;
+}
+.edc-message__action--done {
+  color: var(--color-success-text);
+}
+
 /* Indicateur « trois points » affiché dans la bulle tant qu'aucun token n'est
    arrivé (l'agent réfléchit), remplacé par le curseur de frappe au premier
    fragment de contenu (cf. component.ChatMessage). */

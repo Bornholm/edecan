@@ -27,11 +27,19 @@
     }
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
+  function scheduleInit() {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
   }
+
+  // Chargé en `defer`, ce bloc s'exécute avant les IIFE des modules situés plus
+  // bas dans le fichier — `modules` est donc encore vide ici. On diffère
+  // l'amorçage en microtâche : elle s'exécute après l'enregistrement
+  // synchrone de tous les modules, sans quoi aucun ne serait initialisé.
+  Promise.resolve().then(scheduleInit);
 })();
 
 // ── Module stream : chronomètre d'appel d'outil ──────────────────────────────
@@ -262,6 +270,93 @@
         if (stick) {
           showButton(false);
         }
+      });
+    },
+  });
+})();
+
+// ── Module copy : copier un message au format Markdown ───────────────────────
+//
+// Chaque message expose sa source Markdown brute dans un <template> non rendu
+// (cf. component.ChatMessage). Le bouton « Copier » place cette source dans le
+// presse-papier — l'utilisateur récupère le Markdown d'origine (titres, listes,
+// tables GFM), pas le HTML rendu.
+(function () {
+  "use strict";
+
+  // copyText copie via l'API Clipboard (contexte sécurisé : HTTPS/localhost),
+  // avec repli sur une textarea temporaire + execCommand sinon.
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "absolute";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try {
+        ok = document.execCommand("copy");
+      } catch (e) {
+        ok = false;
+      }
+      document.body.removeChild(ta);
+      if (ok) {
+        resolve();
+      } else {
+        reject(new Error("copie impossible"));
+      }
+    });
+  }
+
+  // feedback affiche brièvement le résultat dans le libellé du bouton, puis
+  // restaure le texte d'origine.
+  function feedback(btn, text) {
+    const label = btn.querySelector(".edc-message__action-text");
+    if (!label) {
+      return;
+    }
+    if (btn._edcRevert) {
+      window.clearTimeout(btn._edcRevert);
+    } else {
+      btn.dataset.edcLabel = label.textContent;
+    }
+    label.textContent = text;
+    btn.classList.add("edc-message__action--done");
+    btn._edcRevert = window.setTimeout(function () {
+      label.textContent = btn.dataset.edcLabel || "Copier";
+      btn.classList.remove("edc-message__action--done");
+      btn._edcRevert = null;
+    }, 2000);
+  }
+
+  window.edc.register("copy", {
+    init: function () {
+      document.body.addEventListener("click", function (evt) {
+        const btn = evt.target.closest("[data-edc-copy]");
+        if (!btn) {
+          return;
+        }
+        const msg = btn.closest(".edc-message");
+        const tpl = msg && msg.querySelector(".edc-message__source");
+        if (!tpl) {
+          return;
+        }
+        // Le navigateur décode le contenu échappé du <template> ; textContent
+        // restitue donc le Markdown d'origine.
+        const source = tpl.content ? tpl.content.textContent : tpl.textContent;
+        copyText(source).then(
+          function () {
+            feedback(btn, "Copié !");
+          },
+          function () {
+            feedback(btn, "Échec");
+          }
+        );
       });
     },
   });

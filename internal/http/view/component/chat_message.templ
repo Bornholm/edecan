@@ -126,6 +126,22 @@ templ ChatMessage(props ChatMessageProps) {
 				if props.Timestamp != "" {
 					<span class="edc-message__timestamp">{ props.Timestamp }</span>
 				}
+				if !props.IsStreaming && props.Content != "" {
+					// Source Markdown brute, exposée pour la copie sans être rendue :
+					// le contenu d'un <template> n'est pas affiché et templ échappe le
+					// texte (aucun templ.Raw), donc pas de réinjection HTML. app.js lit
+					// tpl.content.textContent (cf. module copy).
+					<template class="edc-message__source">{ props.Content }</template>
+					<div class="edc-message__actions">
+						<button type="button" class="edc-message__action" data-edc-copy="" aria-label="Copier le message">
+							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+								<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+							</svg>
+							<span class="edc-message__action-text" aria-live="polite">Copier</span>
+						</button>
+					</div>
+				}
 			</div>
 		</div>
 	}
