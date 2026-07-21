@@ -26,6 +26,14 @@ type ServerConfig struct {
 	BaseURL       string `yaml:"base_url"`
 	SessionSecret string `yaml:"session_secret"`
 	SQLitePath    string `yaml:"sqlite_path"`
+	// GenerationTimeoutSeconds borne la durée totale de génération d'une réponse
+	// de l'agent (streaming SSE) — au delà, un encart d'erreur remplace la bulle
+	// plutôt que de laisser l'interface pendre. 0 ⇒ DefaultGenerationTimeoutSeconds.
+	GenerationTimeoutSeconds int `yaml:"generation_timeout_seconds"`
+	// SSEHeartbeatSeconds est l'intervalle entre deux trames keep-alive SSE,
+	// émises pendant les temps morts (appel d'outil long) pour qu'aucun proxy ne
+	// coupe une connexion inactive. 0 ⇒ DefaultSSEHeartbeatSeconds.
+	SSEHeartbeatSeconds int `yaml:"sse_heartbeat_seconds"`
 }
 
 // IdPConfig décrit un fournisseur d'identité. Type vaut "oidc" (par défaut)
@@ -94,6 +102,15 @@ type AgentConfig struct {
 	// réponse est forcée à partir du contexte déjà collecté (cf.
 	// internal/infra/llm/agent.go). 0 (défaut) ⇒ DefaultMaxSequentialToolCalls.
 	MaxSequentialToolCalls int `yaml:"max_sequential_tool_calls"`
+	// ToolTimeoutSeconds borne la durée d'un appel d'outil MCP isolé — au delà,
+	// l'appel est abandonné et signalé comme échoué, l'agent poursuivant avec
+	// une réponse dégradée. 0 (défaut) ⇒ DefaultToolTimeoutSeconds.
+	ToolTimeoutSeconds int `yaml:"tool_timeout_seconds"`
+	// ReasoningEffort demande au modèle d'exposer son raisonnement au niveau
+	// d'effort indiqué : minimal | low | medium | high | xhigh. Vide (défaut) ⇒
+	// non demandé (un raisonnement spontané reste néanmoins affiché). Sans effet
+	// sur un modèle qui ne supporte pas le raisonnement.
+	ReasoningEffort string `yaml:"reasoning_effort"`
 }
 
 // DefaultMaxCompletionTokens est la borne appliquée quand AgentConfig.MaxCompletionTokens
@@ -103,6 +120,18 @@ const DefaultMaxCompletionTokens = 1024
 // DefaultMaxSequentialToolCalls est la borne appliquée quand
 // AgentConfig.MaxSequentialToolCalls n'est pas renseignée dans le YAML.
 const DefaultMaxSequentialToolCalls = 3
+
+// Valeurs par défaut des réglages de résilience du streaming, appliquées
+// quand le YAML ne les renseigne pas (fail-safe : ne casse aucune config
+// existante).
+const (
+	// DefaultToolTimeoutSeconds borne un appel d'outil MCP isolé.
+	DefaultToolTimeoutSeconds = 60
+	// DefaultGenerationTimeoutSeconds borne la génération complète d'une réponse.
+	DefaultGenerationTimeoutSeconds = 120
+	// DefaultSSEHeartbeatSeconds est l'intervalle des trames keep-alive SSE.
+	DefaultSSEHeartbeatSeconds = 15
+)
 
 // TicketBackendConfig décrit un backend de tickets externe.
 type TicketBackendConfig struct {

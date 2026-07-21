@@ -2,13 +2,16 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"edecan/internal/core/model"
+	"edecan/internal/core/port"
 	"edecan/internal/core/service"
 	"edecan/internal/http/view/component"
 	"edecan/internal/http/view/page"
@@ -41,6 +44,7 @@ func buildMessageProps(messages []*model.Message, authorName string) []component
 		props = append(props, component.ChatMessageProps{
 			Role:       string(m.Role),
 			Content:    m.Content,
+			Reasoning:  m.Reasoning,
 			Timestamp:  m.CreatedAt.Format("15:04"),
 			AuthorName: authorName,
 		})
@@ -258,23 +262,88 @@ func writeSSE(w http.ResponseWriter, flusher http.Flusher, event, data string) {
 	flusher.Flush()
 }
 
-func writeAssistantFragment(w http.ResponseWriter, flusher http.Flusher, r *http.Request, content string, tools []string, streaming bool) {
+// writeSSEComment écrit un commentaire SSE (ligne débutant par « : ») — trame
+// de keep-alive ignorée par le client, qui maintient la connexion ouverte
+// pendant les temps morts (appel d'outil long) pour qu'aucun proxy ne la coupe.
+func writeSSEComment(w http.ResponseWriter, flusher http.Flusher, text string) {
+	fmt.Fprintf(w, ": %s\n\n", text)
+	flusher.Flush()
+}
+
+func writeAssistantFragment(w http.ResponseWriter, flusher http.Flusher, r *http.Request, content, reasoning string, tools []string, streaming bool) {
 	var buf bytes.Buffer
-	props := component.ChatMessageProps{Role: "assistant", Content: content, Tools: tools, IsStreaming: streaming}
+	props := component.ChatMessageProps{Role: "assistant", Content: content, Reasoning: reasoning, Tools: tools, IsStreaming: streaming}
 	if err := component.ChatMessage(props).Render(r.Context(), &buf); err != nil {
 		return
 	}
 	writeSSE(w, flusher, "message", buf.String())
 }
 
-// StreamReply streame la réponse de l'agent token par token via SSE
-// (SPEC §Chat, point 6 ; PLAN.md §Phase 4). L'annulation du contexte (client
-// déconnecté) est propagée par ChatService.StreamAssistantReply pour éviter
-// toute fuite de goroutine.
+// writeStreamStatus met à jour la zone de statut de la bulle (event « status »)
+// avec un libellé d'activité ; un texte vide efface la zone.
+func writeStreamStatus(w http.ResponseWriter, flusher http.Flusher, r *http.Request, text string) {
+	var buf bytes.Buffer
+	if err := page.AssistantStreamStatus(text).Render(r.Context(), &buf); err != nil {
+		return
+	}
+	writeSSE(w, flusher, "status", buf.String())
+}
+
+// writeStreamError remplace la bulle assistant par un encart d'erreur
+// actionnable (event « error » — même cible que « message ») portant un bouton
+// « Réessayer ».
+func writeStreamError(w http.ResponseWriter, flusher http.Flusher, r *http.Request, slug, sessionID, message string) {
+	var buf bytes.Buffer
+	if err := page.AssistantStreamError(slug, sessionID, message).Render(r.Context(), &buf); err != nil {
+		return
+	}
+	writeSSE(w, flusher, "error", buf.String())
+}
+
+// friendlyStreamError traduit une erreur interne de génération en message
+// français actionnable, sans détail technique (l'erreur brute est logguée à
+// part par l'appelant). PLAN §1.4.
+func friendlyStreamError(err error) string {
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return "L'agent met trop de temps à répondre. Veuillez réessayer."
+	case errors.Is(err, context.Canceled):
+		return "La génération a été interrompue. Veuillez réessayer."
+	default:
+		return "Le service d'IA est momentanément indisponible. Veuillez réessayer."
+	}
+}
+
+// statusLabel dérive le libellé de la zone de statut d'un changement d'étape.
+func statusLabel(stage port.ChatStage) string {
+	switch stage {
+	case port.StageThinking:
+		return "L'agent réfléchit…"
+	case port.StageGenerating:
+		return "Rédige la réponse…"
+	default:
+		return ""
+	}
+}
+
+// StreamReply streame la réponse de l'agent via SSE (SPEC §Chat, point 6 ;
+// PLAN-UX-CHAT §Phase 1). La boucle est rendue résiliente :
+//   - timeout global de génération (h.StreamGenerationTimeout) — au delà, un
+//     encart d'erreur remplace la bulle plutôt que de pendre ;
+//   - keep-alive périodique (h.StreamHeartbeat) pendant les temps morts ;
+//   - événements typés (message / status / error / done) consommés par
+//     l'extension SSE htmx ;
+//   - jamais de bulle laissée en état « streaming » (curseur figé) : sur
+//     erreur/timeout on émet un encart d'erreur, sur succès la bulle finale
+//     est ré-émise sans curseur.
+//
+// L'annulation du contexte (client déconnecté OU timeout) est propagée à
+// StreamAssistantReply, qui arrête sa goroutine productrice — pas de fuite.
 func (h *Handlers) StreamReply(w http.ResponseWriter, r *http.Request) {
 	sessionIDStr := r.PathValue("sessionID")
+	slug := r.PathValue("slug")
 	user := currentUser(r)
-	ctx := r.Context()
+	reqCtx := r.Context()
 
 	sessionID, err := parseSessionID(sessionIDStr)
 	if err != nil {
@@ -292,41 +361,146 @@ func (h *Handlers) StreamReply(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
+	// Timeout global de génération : dérive du contexte de la requête, donc une
+	// déconnexion client l'annule aussi. defer cancel() garantit que la
+	// goroutine productrice de StreamAssistantReply est bien libérée.
+	ctx, cancel := context.WithTimeout(reqCtx, h.StreamGenerationTimeout)
+	defer cancel()
+
 	chunks, err := h.ChatService.StreamAssistantReply(ctx, sessionID, user)
 	if err != nil {
 		h.Logger.ErrorContext(ctx, "démarrage du streaming LLM", "error", err)
+		writeStreamError(w, flusher, r, slug, sessionIDStr, friendlyStreamError(err))
 		writeSSE(w, flusher, "done", "erreur")
 		return
 	}
 
+	ticker := time.NewTicker(h.StreamHeartbeat)
+	defer ticker.Stop()
+
 	var content strings.Builder
+	var reasoning strings.Builder
 	var tools []string
-	for chunk := range chunks {
-		if chunk.Err != nil {
-			h.Logger.ErrorContext(ctx, "erreur de streaming LLM", "error", chunk.Err)
-			break
-		}
-		if chunk.Tool != nil {
-			// Retour visuel d'appel d'outil : la bulle assistant est ré-émise
-			// avec la liste des outils au-dessus, en état streaming (l'agent
-			// n'a pas encore produit sa réponse finale).
-			tools = append(tools, chunk.Tool.Name)
-			writeAssistantFragment(w, flusher, r, content.String(), tools, true)
-			continue
-		}
-		content.WriteString(chunk.Content)
-		writeAssistantFragment(w, flusher, r, content.String(), tools, !chunk.Done)
-		if chunk.Done {
-			break
+	statusCleared := false
+	var fatalErr error
+
+loop:
+	for {
+		select {
+		case <-ctx.Done():
+			fatalErr = ctx.Err()
+			break loop
+		case <-ticker.C:
+			writeSSEComment(w, flusher, "ping")
+		case chunk, ok := <-chunks:
+			if !ok {
+				break loop
+			}
+			switch {
+			case chunk.Err != nil:
+				fatalErr = chunk.Err
+				break loop
+			case chunk.Stage != "":
+				if !statusCleared {
+					writeStreamStatus(w, flusher, r, statusLabel(chunk.Stage))
+				}
+			case chunk.Reasoning != "":
+				// Raisonnement (« thinking ») : accumulé et ré-affiché dans la
+				// section repliable au-dessus de la bulle, avant tout contenu.
+				reasoning.WriteString(chunk.Reasoning)
+				writeAssistantFragment(w, flusher, r, content.String(), reasoning.String(), tools, true)
+			case chunk.Tool != nil:
+				h.handleToolChunk(w, flusher, r, chunk.Tool, &content, &reasoning, &tools)
+			default:
+				content.WriteString(chunk.Content)
+				// Premier contenu : on efface la zone de statut, la bulle prend
+				// le relais visuel.
+				if !statusCleared {
+					writeStreamStatus(w, flusher, r, "")
+					statusCleared = true
+				}
+				writeAssistantFragment(w, flusher, r, content.String(), reasoning.String(), tools, !chunk.Done)
+				if chunk.Done {
+					break loop
+				}
+			}
 		}
 	}
 
-	if content.Len() > 0 {
-		if err := h.ChatService.FinalizeReply(ctx, sessionID, content.String()); err != nil {
-			h.Logger.ErrorContext(ctx, "persistance de la réponse de l'agent", "error", err)
+	// Client parti (déconnexion) : ne rien écrire, la goroutine productrice est
+	// libérée par defer cancel(). On distingue ce cas d'un timeout serveur, qui
+	// lui laisse le client connecté et mérite un encart d'erreur.
+	if reqCtx.Err() != nil {
+		return
+	}
+
+	if fatalErr != nil {
+		h.Logger.ErrorContext(ctx, "streaming LLM interrompu", "error", fatalErr)
+		writeStreamStatus(w, flusher, r, "")
+		writeStreamError(w, flusher, r, slug, sessionIDStr, friendlyStreamError(fatalErr))
+		writeSSE(w, flusher, "done", "erreur")
+		return
+	}
+
+	writeStreamStatus(w, flusher, r, "")
+	if content.Len() == 0 {
+		// Fin propre mais aucune réponse produite : on n'a rien à persister,
+		// mieux vaut proposer un retry qu'une bulle vide.
+		writeStreamError(w, flusher, r, slug, sessionIDStr, "L'agent n'a produit aucune réponse. Veuillez réessayer.")
+		writeSSE(w, flusher, "done", "erreur")
+		return
+	}
+
+	if err := h.ChatService.FinalizeReply(ctx, sessionID, content.String(), reasoning.String()); err != nil {
+		h.Logger.ErrorContext(ctx, "persistance de la réponse de l'agent", "error", err)
+	}
+	// Ré-émission de la bulle finale sans curseur (section de raisonnement
+	// repliée) : garantit qu'aucun fragment « streaming » ne reste affiché si le
+	// flux s'est clos sans fragment Done.
+	writeAssistantFragment(w, flusher, r, content.String(), reasoning.String(), tools, false)
+	writeSSE(w, flusher, "done", "ok")
+}
+
+// handleToolChunk traduit un événement de cycle de vie d'outil en retour
+// visuel : pastille d'outil au-dessus de la bulle (début) et libellé de statut.
+func (h *Handlers) handleToolChunk(w http.ResponseWriter, flusher http.Flusher, r *http.Request, tool *port.ToolActivity, content, reasoning *strings.Builder, tools *[]string) {
+	switch tool.Phase {
+	case port.ToolPhaseStart:
+		*tools = append(*tools, tool.Name)
+		writeAssistantFragment(w, flusher, r, content.String(), reasoning.String(), *tools, true)
+		writeStreamStatus(w, flusher, r, fmt.Sprintf("Utilise l'outil « %s »…", tool.Name))
+	case port.ToolPhaseEnd:
+		if tool.Err != nil {
+			writeStreamStatus(w, flusher, r, fmt.Sprintf("L'outil « %s » est indisponible, l'agent poursuit…", tool.Name))
+		} else {
+			writeStreamStatus(w, flusher, r, "Analyse des résultats…")
 		}
 	}
-	writeSSE(w, flusher, "done", "ok")
+}
+
+// RetryReply relance la génération de la réponse de l'agent après un échec :
+// comme aucune réponse assistant n'est persistée en cas d'erreur (cf.
+// StreamReply), il suffit de renvoyer un nouveau placeholder qui rouvre le
+// flux SSE depuis l'historique inchangé (PLAN §1.4).
+func (h *Handlers) RetryReply(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	sessionIDStr := r.PathValue("sessionID")
+	user := currentUser(r)
+	ctx := r.Context()
+
+	sessionID, err := parseSessionID(sessionIDStr)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Vérifie la propriété de session avant de rouvrir un flux (SPEC §Sécurité).
+	if _, err := h.ChatService.GetSession(ctx, sessionID, user.ID); err != nil {
+		writeServiceError(w, r, err)
+		return
+	}
+
+	render(w, r, page.AssistantStreamPlaceholder(slug, sessionIDStr))
 }
 
 // HandoverModalHandler ouvre la fenêtre « Transformer en ticket » : affiche

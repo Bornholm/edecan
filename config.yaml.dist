@@ -7,6 +7,15 @@ server:
   base_url: "${EDECAN_BASE_URL}"
   session_secret: "${EDECAN_SESSION_SECRET}"
   sqlite_path: "edecan.db"
+  # Résilience du streaming SSE du chat (valeurs par défaut si omises) :
+  #   generation_timeout_seconds — borne la durée totale d'une réponse de
+  #     l'agent ; au delà, un encart d'erreur « Réessayer » remplace la bulle
+  #     plutôt que de laisser l'interface pendre (défaut 120).
+  #   sse_heartbeat_seconds — intervalle des trames keep-alive émises pendant
+  #     les temps morts (appel d'outil long) pour qu'aucun proxy ne coupe la
+  #     connexion inactive (défaut 15).
+  generation_timeout_seconds: 120
+  sse_heartbeat_seconds: 15
 
 idps:
   - name: keycloak
@@ -73,6 +82,17 @@ agents:
     # atteint, une réponse est forcée à partir du contexte déjà collecté.
     # Optionnel : 3 par défaut si omis.
     max_sequential_tool_calls: 3
+    # Durée maximale d'un appel d'outil MCP isolé (secondes) — au delà, l'appel
+    # est abandonné et signalé comme échoué : l'agent poursuit avec une réponse
+    # dégradée plutôt que de laisser la génération pendre. Optionnel : 60 par
+    # défaut si omis.
+    tool_timeout_seconds: 60
+    # Demande au modèle d'exposer son raisonnement (« thinking »), affiché dans
+    # une section repliable au-dessus de la réponse. Niveaux : minimal | low |
+    # medium | high | xhigh. Vide/absent : non demandé (un raisonnement renvoyé
+    # spontanément par le modèle reste néanmoins affiché). Sans effet sur un
+    # modèle qui ne supporte pas le raisonnement.
+    # reasoning_effort: medium
     mcp_servers:
       - name: documentation-interne
         type: http

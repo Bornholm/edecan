@@ -232,9 +232,10 @@ func (s *ChatService) StreamAssistantReply(ctx context.Context, sessionID model.
 }
 
 // FinalizeReply persiste la réponse complète de l'agent une fois le
-// streaming terminé.
-func (s *ChatService) FinalizeReply(ctx context.Context, sessionID model.SessionID, content string) error {
-	msg := &model.Message{SessionID: sessionID, Role: model.MessageRoleAssistant, Content: content, CreatedAt: time.Now()}
+// streaming terminé. reasoning porte le raisonnement éventuel exposé par le
+// modèle (vide sinon) — stocké à part du contenu, pour affichage seulement.
+func (s *ChatService) FinalizeReply(ctx context.Context, sessionID model.SessionID, content, reasoning string) error {
+	msg := &model.Message{SessionID: sessionID, Role: model.MessageRoleAssistant, Content: content, Reasoning: reasoning, CreatedAt: time.Now()}
 	if err := s.messages.Save(ctx, msg); err != nil {
 		return err
 	}

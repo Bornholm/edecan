@@ -401,6 +401,11 @@
   align-items: flex-start;
   font-family: var(--font-sans);
   animation: edc-fade-in var(--transition-base);
+  /* min-width:0 empêche un contenu large (table GFM, bloc de code, URL non
+     sécable) de forcer le message au-delà de la colonne centrée : sans lui, le
+     min-width:auto par défaut d'un flex item interdit tout rétrécissement et
+     casse l'alignement au lieu de laisser jouer le overflow-x interne. */
+  min-width: 0;
 }
 .edc-message--user {
   flex-direction: row-reverse;
@@ -447,6 +452,10 @@
   flex-direction: column;
   max-width: 80%;
   gap: 4px;
+  /* Autorise la colonne à rétrécir sous la largeur intrinsèque de la bulle
+     (cf. .edc-message) : c'est ce qui permet à un tableau/bloc de code large
+     de défiler à l'intérieur plutôt que d'élargir toute la conversation. */
+  min-width: 0;
 }
 .edc-message--user .edc-message__col {
   align-items: flex-end;
@@ -462,6 +471,11 @@
   box-shadow: var(--shadow-xs);
   border-radius: var(--radius-md) var(--radius-lg) var(--radius-lg)
     var(--radius-md);
+  /* Bornée à la colonne, et casse les mots trop longs (URL, chemins) plutôt
+     que de déborder — les blocs pré/tables gèrent leur propre défilement. */
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 .edc-message--user .edc-message__bubble {
   background: var(--color-primary);
@@ -532,6 +546,108 @@
   50% {
     opacity: 1;
   }
+}
+
+/* Zone de statut d'un flux en cours (« réfléchit », « utilise un outil »…),
+   sous le conteneur SSE de la bulle assistant — retour permanent d'activité
+   pour qu'aucun temps mort ne paraisse un blocage (PLAN-UX-CHAT §Phase 1). */
+.edc-stream-status:empty {
+  display: none;
+}
+.edc-stream-status__text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-xs);
+  color: var(--fg-3);
+  padding: 2px 2px 6px;
+}
+.edc-stream-status__spinner {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--color-primary-border);
+  border-top-color: var(--color-primary-text);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: edc-spin 0.7s linear infinite;
+}
+@keyframes edc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Encart d'erreur de génération, en remplacement de la bulle assistant :
+   message actionnable + bouton « Réessayer » (PLAN-UX-CHAT §Phase 1.4). */
+.edc-stream-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-error-border);
+  background: var(--color-error-subtle);
+  border-radius: var(--radius-lg);
+  color: var(--fg-1);
+}
+.edc-stream-error__icon {
+  color: var(--color-error-text);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.edc-stream-error__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.edc-stream-error__msg {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+/* Section de raisonnement (« thinking ») repliable au-dessus de la bulle
+   assistant — affichée seulement quand le modèle expose son raisonnement. */
+.edc-reasoning {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-base);
+  font-size: var(--text-sm);
+  max-width: 100%;
+  min-width: 0;
+}
+.edc-reasoning__summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--fg-3);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  user-select: none;
+  list-style: none;
+}
+.edc-reasoning__summary::-webkit-details-marker {
+  display: none;
+}
+.edc-reasoning__summary::after {
+  content: "▸";
+  margin-left: auto;
+  transition: transform var(--transition-fast);
+}
+.edc-reasoning[open] .edc-reasoning__summary::after {
+  transform: rotate(90deg);
+}
+.edc-reasoning__icon {
+  color: var(--color-primary-text);
+  flex-shrink: 0;
+}
+.edc-reasoning__body {
+  padding: 2px 12px 10px;
+  color: var(--fg-2);
+  border-top: 1px solid var(--border-subtle);
+  overflow-x: auto;
 }
 
 /* ── Prose : rendu Markdown partagé (chat, corps de ticket, commentaires)

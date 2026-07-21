@@ -7,6 +7,7 @@ package registry
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"edecan/internal/auth"
 	"edecan/internal/config"
@@ -145,6 +146,10 @@ func agentFromConfig(a config.AgentConfig) model.Agent {
 	if maxSequentialToolCalls == 0 {
 		maxSequentialToolCalls = config.DefaultMaxSequentialToolCalls
 	}
+	toolTimeoutSeconds := a.ToolTimeoutSeconds
+	if toolTimeoutSeconds == 0 {
+		toolTimeoutSeconds = config.DefaultToolTimeoutSeconds
+	}
 	return model.Agent{
 		ID:                     model.AgentID(a.Name),
 		Provider:               a.Provider,
@@ -155,6 +160,8 @@ func agentFromConfig(a config.AgentConfig) model.Agent {
 		SummaryModel:           a.SummaryModel,
 		MaxCompletionTokens:    maxCompletionTokens,
 		MaxSequentialToolCalls: maxSequentialToolCalls,
+		ToolTimeout:            time.Duration(toolTimeoutSeconds) * time.Second,
+		ReasoningEffort:        a.ReasoningEffort,
 	}
 }
 

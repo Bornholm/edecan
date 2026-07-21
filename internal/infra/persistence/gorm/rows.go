@@ -46,6 +46,7 @@ type MessageRow struct {
 	SessionID uint `gorm:"index"`
 	Role      string
 	Content   string
+	Reasoning string
 	CreatedAt time.Time
 }
 

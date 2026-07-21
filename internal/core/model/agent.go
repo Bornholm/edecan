@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 // MCPTransport identifie le mode de communication avec un serveur MCP.
 type MCPTransport string
 
@@ -46,4 +48,14 @@ type Agent struct {
 	// enchaînés avant qu'une réponse ne soit forcée pour l'utilisateur
 	// (cf. config.AgentConfig.MaxSequentialToolCalls).
 	MaxSequentialToolCalls int
+	// ToolTimeout borne la durée d'exécution d'un appel d'outil MCP isolé — au
+	// delà, l'appel est abandonné et signalé comme échoué (l'agent poursuit
+	// avec une réponse dégradée plutôt que de pendre indéfiniment). 0 ⇒ pas de
+	// borne (cf. config.AgentConfig.ToolTimeoutSeconds).
+	ToolTimeout time.Duration
+	// ReasoningEffort, s'il est non vide, demande au modèle d'exposer son
+	// raisonnement au niveau d'effort donné (minimal|low|medium|high|xhigh).
+	// Vide ⇒ non demandé, mais un raisonnement spontanément renvoyé par le
+	// modèle reste affiché (cf. config.AgentConfig.ReasoningEffort).
+	ReasoningEffort string
 }

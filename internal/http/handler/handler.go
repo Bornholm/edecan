@@ -10,6 +10,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/hashicorp/golang-lru/v2/expirable"
@@ -38,6 +39,11 @@ type Handlers struct {
 	// NewTicketCardsCache. À construire une seule fois pour tout le
 	// processus (cf. cmd/edecan/main.go).
 	TicketCardsCache *expirable.LRU[ticketCardsCacheKey, []component.TicketCardProps]
+	// StreamGenerationTimeout borne la durée totale d'un flux SSE de réponse
+	// de l'agent, StreamHeartbeat l'intervalle des trames keep-alive émises
+	// pendant les temps morts (cf. StreamReply, config.ServerConfig).
+	StreamGenerationTimeout time.Duration
+	StreamHeartbeat         time.Duration
 }
 
 // render écrit un templ.Component dans la réponse HTTP.

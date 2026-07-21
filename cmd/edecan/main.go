@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 
@@ -72,17 +73,30 @@ func main() {
 	secure := strings.HasPrefix(cfg.Server.BaseURL, "https://")
 	sessionStore := auth.NewCookieSessionStore([]byte(cfg.Server.SessionSecret), users, secure)
 
+	// Réglages de résilience du streaming SSE — valeurs par défaut sûres si le
+	// YAML ne les renseigne pas (fail-safe, cf. config.Default*).
+	generationTimeoutSeconds := cfg.Server.GenerationTimeoutSeconds
+	if generationTimeoutSeconds == 0 {
+		generationTimeoutSeconds = config.DefaultGenerationTimeoutSeconds
+	}
+	heartbeatSeconds := cfg.Server.SSEHeartbeatSeconds
+	if heartbeatSeconds == 0 {
+		heartbeatSeconds = config.DefaultSSEHeartbeatSeconds
+	}
+
 	h := &handler.Handlers{
-		Registry:         reg,
-		SessionStore:     sessionStore,
-		Secure:           secure,
-		AuthService:      authService,
-		ChatService:      chatService,
-		TicketService:    ticketService,
-		HandoverService:  handoverService,
-		RelevanceService: relevanceService,
-		Logger:           logger,
-		TicketCardsCache: handler.NewTicketCardsCache(),
+		Registry:                reg,
+		SessionStore:            sessionStore,
+		Secure:                  secure,
+		AuthService:             authService,
+		ChatService:             chatService,
+		TicketService:           ticketService,
+		HandoverService:         handoverService,
+		RelevanceService:        relevanceService,
+		Logger:                  logger,
+		TicketCardsCache:        handler.NewTicketCardsCache(),
+		StreamGenerationTimeout: time.Duration(generationTimeoutSeconds) * time.Second,
+		StreamHeartbeat:         time.Duration(heartbeatSeconds) * time.Second,
 	}
 
 	mux := http.NewServeMux()
@@ -104,6 +118,7 @@ func main() {
 	protected.HandleFunc("GET /projects/{slug}/chat/{sessionID}", h.SessionView)
 	protected.HandleFunc("POST /projects/{slug}/chat/{sessionID}/messages", h.PostMessage)
 	protected.HandleFunc("GET /projects/{slug}/chat/{sessionID}/stream", h.StreamReply)
+	protected.HandleFunc("POST /projects/{slug}/chat/{sessionID}/retry", h.RetryReply)
 	protected.HandleFunc("POST /projects/{slug}/chat/{sessionID}/delete", h.DeleteSession)
 	protected.HandleFunc("GET /projects/{slug}/chat/{sessionID}/handover/modal", h.HandoverModalHandler)
 	protected.HandleFunc("POST /projects/{slug}/chat/{sessionID}/handover/draft", h.HandoverDraftHandler)

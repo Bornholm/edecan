@@ -22,6 +22,10 @@ type ChatMessageProps struct {
 	Timestamp   string
 	IsStreaming bool
 	AuthorName  string
+	// Reasoning porte le raisonnement (« thinking ») exposé par le modèle, le
+	// cas échéant — affiché au-dessus de la bulle dans une section repliable
+	// (ouverte pendant le streaming, repliée une fois la réponse figée).
+	Reasoning string
 	// Tools liste les outils MCP appelés par l'agent pendant la génération de
 	// ce message — retour visuel éphémère (non persisté), affiché au-dessus de
 	// la bulle de réponse (cf. handler.StreamReply).
@@ -100,7 +104,7 @@ func ChatMessage(props ChatMessageProps) templ.Component {
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(props.Content)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/component/chat_message.templ`, Line: 69, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/component/chat_message.templ`, Line: 73, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
@@ -141,7 +145,7 @@ func ChatMessage(props ChatMessageProps) templ.Component {
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues("background:" + avatarColor(props.AuthorName) + "22;border-color:" + avatarColor(props.AuthorName) + "44;color:" + avatarColor(props.AuthorName))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/component/chat_message.templ`, Line: 74, Col: 189}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/component/chat_message.templ`, Line: 78, Col: 189}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -154,7 +158,7 @@ func ChatMessage(props ChatMessageProps) templ.Component {
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(initials(props.AuthorName))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/component/chat_message.templ`, Line: 75, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/component/chat_message.templ`, Line: 79, Col: 33}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -205,7 +209,7 @@ func ChatMessage(props ChatMessageProps) templ.Component {
 					var templ_7745c5c3_Var9 string
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(tool)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/component/chat_message.templ`, Line: 86, Col: 14}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/component/chat_message.templ`, Line: 90, Col: 14}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -221,7 +225,31 @@ func ChatMessage(props ChatMessageProps) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"edc-message__bubble edc-prose\">")
+			if props.Reasoning != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<details class=\"edc-reasoning\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				if props.IsStreaming {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, " open")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "><summary class=\"edc-reasoning__summary\"><svg class=\"edc-reasoning__icon\" width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9.5 2a4.5 4.5 0 00-4.5 4.5c0 1 .3 1.9.9 2.7A4.5 4.5 0 004 12.5a4.5 4.5 0 004.5 4.5c.2 0 .3 0 .5-.03V21a1 1 0 002 0V3a1 1 0 00-1-1z\"></path> <path d=\"M14.5 2A4.5 4.5 0 0119 6.5c0 1-.3 1.9-.9 2.7a4.5 4.5 0 011.9 3.3 4.5 4.5 0 01-4.5 4.5\"></path></svg> <span>Raisonnement</span></summary><div class=\"edc-reasoning__body edc-prose\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templ.Raw(messageBodyHTML(props.Reasoning)).Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div></details>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div class=\"edc-message__bubble edc-prose\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -230,35 +258,35 @@ func ChatMessage(props ChatMessageProps) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if props.IsStreaming {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span class=\"edc-message__cursor\"></span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<span class=\"edc-message__cursor\"></span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if props.Timestamp != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<span class=\"edc-message__timestamp\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"edc-message__timestamp\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(props.Timestamp)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/component/chat_message.templ`, Line: 98, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/component/chat_message.templ`, Line: 116, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

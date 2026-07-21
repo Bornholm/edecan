@@ -23,6 +23,7 @@ func (r *messageRepository) Save(ctx context.Context, m *model.Message) error {
 		SessionID: uint(m.SessionID),
 		Role:      string(m.Role),
 		Content:   m.Content,
+		Reasoning: m.Reasoning,
 		CreatedAt: m.CreatedAt,
 	}
 	if err := r.db.WithContext(ctx).Save(&row).Error; err != nil {
@@ -54,6 +55,7 @@ func (r *messageRepository) ListBySession(ctx context.Context, sessionID model.S
 			SessionID: model.SessionID(row.SessionID),
 			Role:      model.MessageRole(row.Role),
 			Content:   row.Content,
+			Reasoning: row.Reasoning,
 			CreatedAt: row.CreatedAt,
 		})
 	}

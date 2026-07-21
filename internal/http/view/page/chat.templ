@@ -211,16 +211,71 @@ templ Chat(props ChatProps) {
 
 // AssistantStreamPlaceholder est ajouté à #messages juste après le message
 // User : il ouvre la connexion SSE qui recevra les fragments de la réponse
-// de l'agent (SPEC §Chat, point 6 ; PLAN.md §Phase 4 : SSE via hx-ext="sse").
+// de l'agent (SPEC §Chat, point 6 ; PLAN-UX-CHAT §Phase 1 : événements typés
+// message / status / error / done via hx-ext="sse").
+//
+// Deux zones de swap distinctes sous le même conteneur SSE :
+//   - la zone de statut (« status ») : retour d'activité léger (réfléchit /
+//     utilise un outil / rédige), en aria-live pour l'accessibilité ;
+//   - la zone de bulle (« message,error ») : la réponse en cours OU, en cas
+//     d'échec, l'encart d'erreur qui la remplace (même cible, donc la bulle
+//     figée est bien écrasée).
 templ AssistantStreamPlaceholder(projectSlug, sessionID string) {
 	<div
 		hx-ext="sse"
 		sse-connect={ "/projects/" + projectSlug + "/chat/" + sessionID + "/stream" }
-		sse-swap="message"
 		sse-close="done"
-		hx-swap="innerHTML"
 	>
-		@component.ChatMessage(component.ChatMessageProps{Role: "assistant", Content: "", IsStreaming: true})
+		<div
+			class="edc-stream-status"
+			role="status"
+			aria-live="polite"
+			sse-swap="status"
+			hx-swap="innerHTML"
+		></div>
+		<div sse-swap="message,error" hx-swap="innerHTML">
+			@component.ChatMessage(component.ChatMessageProps{Role: "assistant", Content: "", IsStreaming: true})
+		</div>
+	</div>
+}
+
+// AssistantStreamStatus rend le libellé de la zone de statut d'un flux en
+// cours (event SSE « status »). Un texte vide efface la zone (fin de flux ou
+// premier token de contenu).
+templ AssistantStreamStatus(text string) {
+	if text != "" {
+		<span class="edc-stream-status__text">
+			<span class="edc-stream-status__spinner" aria-hidden="true"></span>
+			{ text }
+		</span>
+	}
+}
+
+// AssistantStreamError remplace la bulle assistant par un encart d'erreur
+// actionnable (event SSE « error ») : message français sans détail technique
+// et bouton « Réessayer » qui rouvre un flux de génération (PLAN §1.4).
+templ AssistantStreamError(projectSlug, sessionID, message string) {
+	<div class="edc-stream-error" role="alert">
+		<svg class="edc-stream-error__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path>
+			<path d="M12 9v4M12 17h.01"></path>
+		</svg>
+		<div class="edc-stream-error__body">
+			<div class="edc-stream-error__msg">{ message }</div>
+			<button
+				type="button"
+				class="edc-btn edc-btn--secondary edc-btn--sm"
+				hx-post={ string(templ.SafeURL(sessionHref(projectSlug, sessionID) + "/retry")) }
+				hx-target="#messages"
+				hx-swap="beforeend"
+			>
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M23 4v6h-6M1 20v-6h6"></path>
+					<path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path>
+				</svg>
+				Réessayer
+			</button>
+		</div>
 	</div>
 }
 

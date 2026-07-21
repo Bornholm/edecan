@@ -6,25 +6,67 @@ import (
 	"edecan/internal/core/model"
 )
 
+// ChatStage décrit l'étape de haut niveau de la génération, indépendamment de
+// tout appel d'outil — pour un statut clair côté client (« réfléchit »,
+// « rédige »…) même lorsque l'agent ne mobilise aucun outil.
+type ChatStage string
+
+const (
+	// StageThinking : l'agent traite la demande avant de produire du texte ou
+	// d'appeler un outil (première complétion, souvent la plus lente).
+	StageThinking ChatStage = "thinking"
+	// StageGenerating : l'agent rédige sa réponse finale à l'utilisateur.
+	StageGenerating ChatStage = "generating"
+)
+
 // ChatChunk est un fragment de réponse LLM streamé token par token
 // (SPEC §Chat, point 6). Un fragment porte soit du contenu (Content), soit un
-// événement d'appel d'outil (Tool), soit la fin de réponse (Done), soit une
-// erreur (Err).
+// événement d'appel d'outil (Tool), soit un changement d'étape (Stage), soit
+// la fin de réponse (Done), soit une erreur fatale (Err).
 type ChatChunk struct {
 	Content string
-	// Tool, s'il est non nil, signale que l'agent a déclenché un appel d'outil
-	// MCP avant de poursuivre sa réponse — matière à un retour visuel dans le
-	// chat pendant la résolution des outils (cf. handler.StreamReply).
+	// Reasoning porte un fragment du raisonnement (« thinking ») exposé par les
+	// modèles qui le supportent — distinct du contenu de la réponse, affiché
+	// dans une section repliable. Streamé de façon incrémentale comme Content.
+	Reasoning string
+	// Tool, s'il est non nil, signale un événement de cycle de vie d'un appel
+	// d'outil MCP (début/fin) — matière à un retour visuel dans le chat pendant
+	// la résolution des outils (cf. handler.StreamReply).
 	Tool *ToolActivity
-	Done bool
-	Err  error
+	// Stage, s'il est non vide, signale un changement d'étape de haut niveau
+	// (cf. ChatStage) — un tel fragment ne porte ni contenu ni fin.
+	Stage ChatStage
+	Done  bool
+	// Err signale un échec FATAL de la génération (interrompt la réponse). Un
+	// échec d'un outil isolé n'est PAS fatal : il est signalé via
+	// ToolActivity.Err et l'agent poursuit avec une réponse dégradée.
+	Err error
 }
 
-// ToolActivity décrit l'appel d'un outil MCP par l'agent, pour un retour
-// visuel en cours de génération (l'agent interroge des outils avant de
-// formuler sa réponse). Éphémère : non persisté avec le message.
+// ToolPhase distingue le début et la fin d'un appel d'outil MCP.
+type ToolPhase int
+
+const (
+	// ToolPhaseStart : l'outil vient d'être invoqué, l'exécution commence.
+	ToolPhaseStart ToolPhase = iota
+	// ToolPhaseEnd : l'exécution de l'outil est terminée (succès ou échec).
+	ToolPhaseEnd
+)
+
+// ToolActivity décrit un événement de cycle de vie de l'appel d'un outil MCP
+// par l'agent, pour un retour visuel en cours de génération (l'agent interroge
+// des outils avant de formuler sa réponse). Éphémère : non persisté avec le
+// message.
 type ToolActivity struct {
-	Name string
+	Name  string
+	Phase ToolPhase
+	// Err, non nil sur un fragment ToolPhaseEnd, indique que l'exécution de
+	// l'outil a échoué — la génération n'est pas interrompue pour autant
+	// (l'agent poursuit avec le contexte disponible).
+	Err error
+	// DurationMS est la durée d'exécution de l'outil en millisecondes, mesurée
+	// sur un fragment ToolPhaseEnd.
+	DurationMS int64
 }
 
 // ChatAgent expose l'agent LLM (system prompt + serveurs MCP + paramètres

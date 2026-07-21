@@ -21,5 +21,10 @@ type Message struct {
 	SessionID SessionID
 	Role      MessageRole
 	Content   string // Markdown
+	// Reasoning porte, pour un message d'assistant, le raisonnement
+	// (« thinking ») exposé par le modèle lorsqu'il en produit — affiché dans
+	// une section repliable, jamais renvoyé au LLM dans l'historique (évite
+	// d'alourdir le contexte). Vide pour les autres rôles ou modèles.
+	Reasoning string
 	CreatedAt time.Time
 }

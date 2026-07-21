@@ -6,12 +6,23 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/bornholm/genai/llm"
 
 	"edecan/internal/core/model"
 	"edecan/internal/core/port"
 )
+
+// forceAnswerInstruction est injecté dans l'historique lorsque le plafond
+// d'appels d'outils est atteint. Plutôt que d'interdire les outils au niveau du
+// protocole (ToolChoiceNone) — ce que certains modèles (ex. MiniMax) traduisent
+// en balisage d'appel d'outil au format texte qui fuite dans la réponse — on
+// demande explicitement à l'agent de conclure avec les informations dont il
+// dispose, en signalant ce qui manque.
+const forceAnswerInstruction = "Tu as atteint la limite d'appels d'outils disponibles. " +
+	"Utilise les informations déjà collectées pour répondre maintenant à ma demande, même partiellement. " +
+	"Si certaines informations te manquent, indique-le explicitement dans ta réponse. N'appelle plus aucun outil."
 
 // ChatAgent implémente port.ChatAgent au-dessus d'un llm.Client genai.
 //
@@ -54,14 +65,43 @@ func (a *ChatAgent) StreamReply(ctx context.Context, agent model.Agent, history 
 	messages := toLLMMessages(agent.SystemPrompt, history)
 
 	if len(a.mcpServers) == 0 {
-		return a.streamPlain(ctx, messages, agent.MaxCompletionTokens)
+		return a.streamPlain(ctx, messages, agent.MaxCompletionTokens, agent.ReasoningEffort)
 	}
 
 	tools, err := a.toolsForSession(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("connexion aux serveurs MCP: %w", err)
 	}
-	return a.streamWithTools(ctx, messages, tools, agent.MaxCompletionTokens, agent.MaxSequentialToolCalls)
+	return a.streamWithTools(ctx, messages, tools, agent.MaxCompletionTokens, agent.MaxSequentialToolCalls, agent.ToolTimeout, agent.ReasoningEffort)
+}
+
+// reasoningOpt retourne l'option de complétion activant le raisonnement au
+// niveau d'effort donné, ou une option neutre si aucun n'est configuré. Un
+// modèle qui ne supporte pas le raisonnement ignore simplement l'option ; à
+// l'inverse, un raisonnement spontané reste extrait même sans cette option.
+func reasoningOpt(effort string) llm.ChatCompletionOptionFunc {
+	if effort == "" {
+		return func(*llm.ChatCompletionOptions) {}
+	}
+	return llm.WithReasoning(llm.NewReasoningOptions(llm.ReasoningEffort(effort)))
+}
+
+// deltaReasoning extrait le fragment de raisonnement d'un delta de streaming,
+// si le provider en expose (cf. llm.ReasoningStreamDelta).
+func deltaReasoning(delta llm.StreamDelta) string {
+	if rd, ok := delta.(llm.ReasoningStreamDelta); ok {
+		return rd.Reasoning()
+	}
+	return ""
+}
+
+// respReasoning extrait le raisonnement d'une réponse de complétion (non
+// streamée), si le provider en expose (cf. llm.ReasoningChatCompletionResponse).
+func respReasoning(resp llm.ChatCompletionResponse) string {
+	if rr, ok := resp.(llm.ReasoningChatCompletionResponse); ok {
+		return rr.Reasoning()
+	}
+	return ""
 }
 
 // toolsForSession retourne les outils de la session portée par ctx (cf.
@@ -117,8 +157,8 @@ func (a *ChatAgent) ForgetSession(sessionID string) {
 	}
 }
 
-func (a *ChatAgent) streamPlain(ctx context.Context, messages []llm.Message, maxCompletionTokens int) (<-chan port.ChatChunk, error) {
-	stream, err := a.client.ChatCompletionStream(ctx, llm.WithMessages(messages...), llm.WithMaxCompletionTokens(maxCompletionTokens))
+func (a *ChatAgent) streamPlain(ctx context.Context, messages []llm.Message, maxCompletionTokens int, reasoningEffort string) (<-chan port.ChatChunk, error) {
+	stream, err := a.client.ChatCompletionStream(ctx, llm.WithMessages(messages...), llm.WithMaxCompletionTokens(maxCompletionTokens), reasoningOpt(reasoningEffort))
 	if err != nil {
 		return nil, fmt.Errorf("démarrage du streaming LLM: %w", err)
 	}
@@ -126,6 +166,11 @@ func (a *ChatAgent) streamPlain(ctx context.Context, messages []llm.Message, max
 	out := make(chan port.ChatChunk)
 	go func() {
 		defer close(out)
+		// Annonce l'étape de rédaction dès l'ouverture du flux : en streaming
+		// pur, les tokens arrivent presque aussitôt.
+		if !sendOrCancel(ctx, out, port.ChatChunk{Stage: port.StageGenerating}) {
+			return
+		}
 		for {
 			select {
 			case <-ctx.Done():
@@ -144,6 +189,7 @@ func (a *ChatAgent) streamPlain(ctx context.Context, messages []llm.Message, max
 				result := port.ChatChunk{Done: chunk.IsComplete()}
 				if delta := chunk.Delta(); delta != nil {
 					result.Content = delta.Content()
+					result.Reasoning = deltaReasoning(delta)
 				}
 				select {
 				case out <- result:
@@ -170,26 +216,43 @@ func (a *ChatAgent) streamPlain(ctx context.Context, messages []llm.Message, max
 // appel d'outil (ToolChoiceNone) : l'agent doit répondre à l'utilisateur à
 // partir du contexte déjà collecté, plutôt que de renvoyer une erreur ou de
 // continuer à appeler des outils indéfiniment.
-func (a *ChatAgent) streamWithTools(ctx context.Context, messages []llm.Message, tools []llm.Tool, maxCompletionTokens, maxIterations int) (<-chan port.ChatChunk, error) {
+func (a *ChatAgent) streamWithTools(ctx context.Context, messages []llm.Message, tools []llm.Tool, maxCompletionTokens, maxIterations int, toolTimeout time.Duration, reasoningEffort string) (<-chan port.ChatChunk, error) {
 	out := make(chan port.ChatChunk)
 	go func() {
 		defer close(out)
 
 		for i := 0; i < maxIterations; i++ {
+			// Avant chaque complétion pouvant appeler des outils, l'agent
+			// « réfléchit » (résolution non streamée, potentiellement lente).
+			if !sendOrCancel(ctx, out, port.ChatChunk{Stage: port.StageThinking}) {
+				return
+			}
 			resp, err := a.client.ChatCompletion(ctx,
 				llm.WithMessages(messages...),
 				llm.WithTools(tools...),
 				llm.WithToolChoice(llm.ToolChoiceAuto),
 				llm.WithMaxCompletionTokens(maxCompletionTokens),
+				reasoningOpt(reasoningEffort),
 			)
 			if err != nil {
 				sendOrCancel(ctx, out, port.ChatChunk{Err: fmt.Errorf("complétion LLM avec outils: %w", err)})
 				return
 			}
 
+			// Le raisonnement précédant la décision (appel d'outil ou réponse)
+			// est émis dès qu'il est disponible.
+			if reasoning := respReasoning(resp); reasoning != "" {
+				if !sendOrCancel(ctx, out, port.ChatChunk{Reasoning: reasoning}) {
+					return
+				}
+			}
+
 			toolCalls := resp.ToolCalls()
 			slog.DebugContext(ctx, "réponse LLM avec outils", "iteration", i, "tools_proposed", len(tools), "tool_calls", len(toolCalls))
 			if len(toolCalls) == 0 {
+				if !sendOrCancel(ctx, out, port.ChatChunk{Stage: port.StageGenerating}) {
+					return
+				}
 				if !sendOrCancel(ctx, out, port.ChatChunk{Content: resp.Message().Content()}) {
 					return
 				}
@@ -199,34 +262,39 @@ func (a *ChatAgent) streamWithTools(ctx context.Context, messages []llm.Message,
 
 			messages = append(messages, llm.NewToolCallsMessage(toolCalls...))
 			for _, tc := range toolCalls {
-				slog.InfoContext(ctx, "appel d'outil MCP", "name", tc.Name())
-				// Retour visuel dans le chat : signale l'appel d'outil avant de
-				// l'exécuter, pour que l'utilisateur voie l'agent « travailler »
-				// pendant la résolution (souvent plus lente qu'un token).
-				if !sendOrCancel(ctx, out, port.ChatChunk{Tool: &port.ToolActivity{Name: tc.Name()}}) {
-					return
-				}
-				toolMsg, err := llm.ExecuteToolCall(ctx, tc, tools...)
-				if err != nil {
-					sendOrCancel(ctx, out, port.ChatChunk{Err: fmt.Errorf("exécution de l'outil %q: %w", tc.Name(), err)})
+				toolMsg, ok := a.runToolCall(ctx, out, tc, tools, toolTimeout)
+				if !ok {
+					// ctx annulé pendant l'envoi d'un fragment : on arrête.
 					return
 				}
 				messages = append(messages, toolMsg)
 			}
 		}
 
-		// Plafond d'appels d'outils atteint : on force une réponse finale sans
-		// nouvel appel d'outil, à partir de tout ce qui a été collecté.
-		slog.WarnContext(ctx, "plafond d'appels d'outils atteint, réponse finale forcée", "max_iterations", maxIterations)
+		// Plafond d'appels d'outils atteint : plutôt que d'interdire les outils
+		// au niveau du protocole (ToolChoiceNone, source de fuites de balisage
+		// chez certains modèles), on réécrit l'historique en y injectant une
+		// consigne de conclusion, puis on laisse l'agent formuler sa réponse
+		// (dégradée si besoin) à partir de ce qu'il a collecté.
+		slog.WarnContext(ctx, "plafond d'appels d'outils atteint, consigne de conclusion injectée", "max_iterations", maxIterations)
+		if !sendOrCancel(ctx, out, port.ChatChunk{Stage: port.StageGenerating}) {
+			return
+		}
+		messages = append(messages, llm.NewMessage(llm.RoleUser, forceAnswerInstruction))
 		resp, err := a.client.ChatCompletion(ctx,
 			llm.WithMessages(messages...),
 			llm.WithTools(tools...),
-			llm.WithToolChoice(llm.ToolChoiceNone),
 			llm.WithMaxCompletionTokens(maxCompletionTokens),
+			reasoningOpt(reasoningEffort),
 		)
 		if err != nil {
 			sendOrCancel(ctx, out, port.ChatChunk{Err: fmt.Errorf("réponse finale après plafond d'appels d'outils: %w", err)})
 			return
+		}
+		if reasoning := respReasoning(resp); reasoning != "" {
+			if !sendOrCancel(ctx, out, port.ChatChunk{Reasoning: reasoning}) {
+				return
+			}
 		}
 		if !sendOrCancel(ctx, out, port.ChatChunk{Content: resp.Message().Content()}) {
 			return
@@ -235,6 +303,52 @@ func (a *ChatAgent) streamWithTools(ctx context.Context, messages []llm.Message,
 	}()
 
 	return out, nil
+}
+
+// runToolCall exécute un appel d'outil en encadrant sa durée (toolTimeout) et
+// en émettant les fragments de cycle de vie (Start/End, succès comme échec).
+//
+// Un échec d'outil n'est PAS fatal : plutôt que d'interrompre toute la réponse,
+// on renvoie au modèle un message d'outil décrivant l'erreur — l'agent peut
+// alors réagir (réessayer autrement, ou formuler une réponse dégradée). Cela
+// préserve aussi l'invariant du protocole LLM : à chaque appel d'outil doit
+// répondre un message d'outil, sans quoi la complétion suivante échouerait.
+//
+// Retourne ok=false uniquement si ctx a été annulé pendant l'émission d'un
+// fragment — signal pour l'appelant d'arrêter immédiatement.
+func (a *ChatAgent) runToolCall(ctx context.Context, out chan<- port.ChatChunk, tc llm.ToolCall, tools []llm.Tool, toolTimeout time.Duration) (llm.ToolMessage, bool) {
+	slog.InfoContext(ctx, "appel d'outil MCP", "name", tc.Name())
+	// Retour visuel dans le chat : signale l'appel d'outil avant de l'exécuter,
+	// pour que l'utilisateur voie l'agent « travailler » pendant la résolution
+	// (souvent plus lente qu'un token).
+	if !sendOrCancel(ctx, out, port.ChatChunk{Tool: &port.ToolActivity{Name: tc.Name(), Phase: port.ToolPhaseStart}}) {
+		return nil, false
+	}
+
+	// Timeout par outil : un serveur MCP qui pend ne doit pas bloquer toute la
+	// génération. ctx reste parent, donc une annulation globale est respectée.
+	toolCtx := ctx
+	if toolTimeout > 0 {
+		var cancel context.CancelFunc
+		toolCtx, cancel = context.WithTimeout(ctx, toolTimeout)
+		defer cancel()
+	}
+
+	start := time.Now()
+	toolMsg, err := llm.ExecuteToolCall(toolCtx, tc, tools...)
+	durationMS := time.Since(start).Milliseconds()
+
+	if err != nil {
+		slog.WarnContext(ctx, "échec de l'exécution d'un outil MCP, poursuite dégradée", "name", tc.Name(), "error", err, "duration_ms", durationMS)
+		// On réinjecte l'erreur comme résultat d'outil : le modèle en est
+		// informé et poursuit, et l'invariant « une réponse par appel » tient.
+		toolMsg = llm.NewToolMessage(tc.ID(), llm.NewToolResult(fmt.Sprintf("Erreur lors de l'exécution de l'outil : %v", err)))
+		sendOrCancel(ctx, out, port.ChatChunk{Tool: &port.ToolActivity{Name: tc.Name(), Phase: port.ToolPhaseEnd, Err: err, DurationMS: durationMS}})
+		return toolMsg, true
+	}
+
+	sendOrCancel(ctx, out, port.ChatChunk{Tool: &port.ToolActivity{Name: tc.Name(), Phase: port.ToolPhaseEnd, DurationMS: durationMS}})
+	return toolMsg, true
 }
 
 // sendOrCancel envoie chunk sur out, sauf si ctx est annulé entre-temps.
