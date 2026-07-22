@@ -271,6 +271,14 @@ templ AssistantStreamStatus(text string, timed bool) {
 				<span class="edc-stream-status__elapsed" data-edc-elapsed=""></span>
 			}
 		</span>
+	} else {
+		// Nettoyage de la zone de statut : on émet un marqueur invisible plutôt
+		// qu'une charge utile vide. Un event SSE « status » à données vides n'est
+		// pas délivré de façon fiable par EventSource (le navigateur n'invoque
+		// pas le listener sans donnée), donc le swap htmx n'a pas lieu et le
+		// dernier libellé (« Rédige la réponse… ») reste figé sous la bulle
+		// terminée. Ce span sans contenu écrase bien le statut précédent.
+		<span class="edc-stream-status__cleared" aria-hidden="true"></span>
 	}
 }
 

@@ -628,7 +628,10 @@
 /* Zone de statut d'un flux en cours (« réfléchit », « utilise un outil »…),
    sous le conteneur SSE de la bulle assistant — retour permanent d'activité
    pour qu'aucun temps mort ne paraisse un blocage (PLAN-UX-CHAT §Phase 1). */
-.edc-stream-status:empty {
+.edc-stream-status:empty,
+/* Marqueur de nettoyage (cf. page.AssistantStreamStatus) : envoyé à la place
+   d'une charge SSE vide, non délivrée de façon fiable par EventSource. */
+.edc-stream-status:has(> .edc-stream-status__cleared:only-child) {
   display: none;
 }
 .edc-stream-status__text {
