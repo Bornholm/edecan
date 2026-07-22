@@ -183,3 +183,27 @@ projects:
     membership:
       - pattern: "*@exemple.com"
         role: user
+
+# personas (optionnel) : décrivent des catégories d'utilisateurs connectés,
+# identifiées par des filtres d'email. Le champ `prompt` est injecté dans le
+# prompt système de l'agent pour les sessions des utilisateurs correspondants,
+# afin de lui donner du contexte sur son interlocuteur. Un utilisateur peut
+# correspondre à plusieurs personas : leurs prompts sont alors tous injectés.
+personas:
+  - name: client-premium
+    prompt: |
+      L'utilisateur est un client premium. Priorise ses demandes et propose
+      systématiquement une escalade vers le support humain si besoin.
+    filters:
+      - "*@premium.exemple.com"
+    # projects (optionnel) : restreint la portée de la persona aux projets
+    # listés (par slug). Omis ⇒ la persona s'applique à tous les projets.
+    projects:
+      - support-app
+  - name: interne
+    prompt: |
+      L'utilisateur fait partie de l'équipe interne : tu peux employer un
+      vocabulaire technique et référencer les outils internes sans les
+      détailler.
+    filters:
+      - "*@support.exemple.com"

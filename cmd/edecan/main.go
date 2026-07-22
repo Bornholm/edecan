@@ -68,7 +68,7 @@ func main() {
 	shares := gormrepo.NewShareRepository(db)
 
 	authService := service.NewAuthService(users)
-	chatService := service.NewChatService(sessions, messages, relevanceFlags, reg.ProjectByID, reg.Agents, reg.ChatAgents)
+	chatService := service.NewChatService(sessions, messages, relevanceFlags, reg.ProjectByID, reg.Agents, reg.ChatAgents, reg.Personas, auth.MatchesPattern)
 	ticketService := service.NewTicketService(reg.TicketBackends, ticketMappings, reg.ProjectByID)
 	handoverService := service.NewHandoverService(sessions, messages, reg.ProjectByID, reg.Agents, reg.ChatAgents, ticketService)
 	relevanceService := service.NewRelevanceService(sessions, relevanceFlags)

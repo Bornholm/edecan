@@ -27,6 +27,7 @@ type Registry struct {
 	Agents         map[model.AgentID]model.Agent
 	ChatAgents     map[model.AgentID]port.ChatAgent
 	TicketBackends map[model.TicketBackendID]port.TicketBackend
+	Personas       model.Personas
 	AuthManager    *auth.Manager
 }
 
@@ -81,6 +82,10 @@ func Build(ctx context.Context, cfg *config.Config) (*Registry, error) {
 		project := projectFromConfig(p)
 		r.Projects = append(r.Projects, project)
 		r.ProjectByID[project.ID] = project
+	}
+
+	for _, p := range cfg.Personas {
+		r.Personas = append(r.Personas, personaFromConfig(p))
 	}
 
 	idpConfigs := make([]auth.IdPConfig, 0, len(cfg.IdPs))
@@ -211,6 +216,19 @@ func attachmentStoreFromConfig(s config.AttachmentStoreConfig) (port.AttachmentS
 		})
 	default:
 		return nil, fmt.Errorf("type d'emplacement de stockage %q non supporté", s.Type)
+	}
+}
+
+func personaFromConfig(p config.PersonaConfig) model.Persona {
+	projects := make([]model.ProjectID, 0, len(p.Projects))
+	for _, slug := range p.Projects {
+		projects = append(projects, model.ProjectID(slug))
+	}
+	return model.Persona{
+		Name:     p.Name,
+		Prompt:   p.Prompt,
+		Filters:  p.Filters,
+		Projects: projects,
 	}
 }
 

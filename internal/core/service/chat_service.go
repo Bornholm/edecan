@@ -25,6 +25,11 @@ type ChatService struct {
 	projects   map[model.ProjectID]model.Project
 	agents     map[model.AgentID]model.Agent
 	chatAgents map[model.AgentID]port.ChatAgent
+	personas   model.Personas
+	// matchEmail teste la correspondance d'un email à un pattern. Injecté par
+	// l'appelant (cf. auth.MatchesPattern) pour garder la primitive de
+	// correspondance hors du domaine, à l'image de Project.RoleFor.
+	matchEmail func(email, pattern string) bool
 }
 
 func NewChatService(
@@ -34,6 +39,8 @@ func NewChatService(
 	projects map[model.ProjectID]model.Project,
 	agents map[model.AgentID]model.Agent,
 	chatAgents map[model.AgentID]port.ChatAgent,
+	personas model.Personas,
+	matchEmail func(email, pattern string) bool,
 ) *ChatService {
 	return &ChatService{
 		sessions:   sessions,
@@ -42,6 +49,8 @@ func NewChatService(
 		projects:   projects,
 		agents:     agents,
 		chatAgents: chatAgents,
+		personas:   personas,
+		matchEmail: matchEmail,
 	}
 }
 
@@ -198,6 +207,15 @@ func (s *ChatService) StreamAssistantReply(ctx context.Context, sessionID model.
 	_, agent, chatAgent, err := s.projectAgent(sess.ProjectID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Injecte le contexte des personas correspondant à l'utilisateur pour ce
+	// projet dans le prompt système (agent est une copie — sûr à muter).
+	if s.matchEmail != nil {
+		prompts := s.personas.ResolvePrompts(sess.ProjectID, func(pattern string) bool {
+			return s.matchEmail(user.Email, pattern)
+		})
+		agent.SystemPrompt = model.AugmentSystemPrompt(agent.SystemPrompt, prompts)
 	}
 
 	ctx = port.WithMCPIdentity(ctx, port.MCPIdentity{

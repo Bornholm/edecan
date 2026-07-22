@@ -177,5 +177,35 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	names := make(map[string]struct{}, len(c.Personas))
+	for _, p := range c.Personas {
+		if p.Name == "" {
+			return fmt.Errorf("une persona sans nom a été déclarée")
+		}
+		if _, dup := names[p.Name]; dup {
+			return fmt.Errorf("persona %q: nom dupliqué", p.Name)
+		}
+		names[p.Name] = struct{}{}
+
+		if p.Prompt == "" {
+			return fmt.Errorf("persona %q: prompt requis", p.Name)
+		}
+		if len(p.Filters) == 0 {
+			return fmt.Errorf("persona %q: au moins un filtre d'email est requis", p.Name)
+		}
+		for _, f := range p.Filters {
+			if f == "" || !emailPattern.MatchString(f) {
+				return fmt.Errorf("persona %q: filtre d'email %q malformé", p.Name, f)
+			}
+		}
+		// projects est optionnel (persona globale si vide) ; renseigné, chaque
+		// slug doit référencer un projet déclaré.
+		for _, slug := range p.Projects {
+			if _, ok := slugs[slug]; !ok {
+				return fmt.Errorf("persona %q: projet %q introuvable", p.Name, slug)
+			}
+		}
+	}
+
 	return nil
 }

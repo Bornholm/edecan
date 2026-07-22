@@ -18,6 +18,19 @@ type Config struct {
 	AttachmentStores []AttachmentStoreConfig `yaml:"attachment_stores"`
 	TicketBackends   []TicketBackendConfig   `yaml:"ticket_backends"`
 	Projects         []ProjectConfig         `yaml:"projects"`
+	Personas         []PersonaConfig         `yaml:"personas"`
+}
+
+// PersonaConfig décrit une catégorie d'utilisateur connecté, identifiée par une
+// série de filtres d'email. Prompt est injecté dans le prompt système de
+// l'agent pour donner du contexte sur l'interlocuteur. Projects est optionnel :
+// laissé vide, la persona s'applique à tous les projets ; renseigné, il
+// restreint sa portée aux projets listés (par slug).
+type PersonaConfig struct {
+	Name     string   `yaml:"name"`
+	Prompt   string   `yaml:"prompt"`
+	Filters  []string `yaml:"filters"`
+	Projects []string `yaml:"projects"`
 }
 
 // ServerConfig regroupe les paramètres d'écoute HTTP et de session.
