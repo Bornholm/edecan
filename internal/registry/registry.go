@@ -51,14 +51,15 @@ func Build(ctx context.Context, cfg *config.Config) (*Registry, error) {
 			return nil, fmt.Errorf("construction du client LLM pour l'agent %q: %w", a.Name, err)
 		}
 
-		// Les serveurs MCP de l'agent ne sont pas résolus ici : chaque
-		// session de chat établit sa propre connexion à la demande (cf.
-		// llm.ChatAgent), pour que le templating de leurs en-têtes (cf.
-		// port.MCPIdentity) puisse réellement scoper les ressources par
-		// session. La joignabilité d'un serveur MCP n'est donc plus vérifiée
-		// fail-fast au démarrage — une erreur de connexion remonte au
-		// premier message d'une session qui en a besoin.
-		r.ChatAgents[agent.ID] = llm.NewChatAgent(client, agent.MCPServers)
+		// Les serveurs MCP ne sont pas résolus ici : ils sont lus sur le
+		// model.Agent de chaque appel (l'appelant y ajoute ceux des personas
+		// correspondantes) et chaque session de chat établit sa propre
+		// connexion à la demande (cf. llm.ChatAgent), pour que le templating
+		// de leurs en-têtes (cf. port.MCPIdentity) puisse réellement scoper
+		// les ressources par session. La joignabilité d'un serveur MCP n'est
+		// donc pas vérifiée fail-fast au démarrage — une erreur de connexion
+		// remonte au premier message d'une session qui en a besoin.
+		r.ChatAgents[agent.ID] = llm.NewChatAgent(client)
 	}
 
 	stores := make(map[string]port.AttachmentStore, len(cfg.AttachmentStores))
@@ -126,14 +127,16 @@ type ProjectAccess struct {
 	Role    model.Role
 }
 
-func agentFromConfig(a config.AgentConfig) model.Agent {
-	mcpServers := make([]model.MCPServer, 0, len(a.MCPServers))
-	for _, s := range a.MCPServers {
+// mcpServersFromConfig convertit les serveurs MCP déclarés par un agent ou une
+// persona (cf. config.MCPServerConfig) — le transport http est le défaut.
+func mcpServersFromConfig(servers []config.MCPServerConfig) []model.MCPServer {
+	out := make([]model.MCPServer, 0, len(servers))
+	for _, s := range servers {
 		transport := model.MCPTransport(s.Type)
 		if transport == "" {
 			transport = model.MCPTransportHTTP
 		}
-		mcpServers = append(mcpServers, model.MCPServer{
+		out = append(out, model.MCPServer{
 			Name:      s.Name,
 			Transport: transport,
 			URL:       s.URL,
@@ -143,6 +146,11 @@ func agentFromConfig(a config.AgentConfig) model.Agent {
 			Env:       s.Env,
 		})
 	}
+	return out
+}
+
+func agentFromConfig(a config.AgentConfig) model.Agent {
+	mcpServers := mcpServersFromConfig(a.MCPServers)
 	maxCompletionTokens := a.MaxCompletionTokens
 	if maxCompletionTokens == 0 {
 		maxCompletionTokens = config.DefaultMaxCompletionTokens
@@ -225,10 +233,11 @@ func personaFromConfig(p config.PersonaConfig) model.Persona {
 		projects = append(projects, model.ProjectID(slug))
 	}
 	return model.Persona{
-		Name:     p.Name,
-		Prompt:   p.Prompt,
-		Filters:  p.Filters,
-		Projects: projects,
+		Name:       p.Name,
+		Prompt:     p.Prompt,
+		Filters:    p.Filters,
+		Projects:   projects,
+		MCPServers: mcpServersFromConfig(p.MCPServers),
 	}
 }
 

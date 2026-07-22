@@ -97,7 +97,7 @@ func drainChunks(t *testing.T, ch <-chan port.ChatChunk) (content string, gotErr
 func TestStreamWithToolsForcesReplyAtCap(t *testing.T) {
 	const maxIterations = 3
 	client := &stubClient{}
-	agent := NewChatAgent(client, nil)
+	agent := NewChatAgent(client)
 
 	ch, err := agent.streamWithTools(context.Background(),
 		[]llm.Message{llm.NewMessage(llm.RoleUser, "bonjour")},
@@ -179,7 +179,7 @@ func (c *reasoningClient) Embeddings(ctx context.Context, inputs []string, funcs
 // TestStreamWithToolsEmitsReasoning : lorsqu'un provider expose un raisonnement,
 // il doit être remonté dans un ChatChunk.Reasoning, distinct du contenu.
 func TestStreamWithToolsEmitsReasoning(t *testing.T) {
-	agent := NewChatAgent(&reasoningClient{}, nil)
+	agent := NewChatAgent(&reasoningClient{})
 
 	ch, err := agent.streamWithTools(context.Background(),
 		[]llm.Message{llm.NewMessage(llm.RoleUser, "coucou")},
@@ -208,7 +208,7 @@ func TestStreamWithToolsEmitsReasoning(t *testing.T) {
 // Start/End (End portant l'erreur) doivent être émis.
 func TestStreamWithToolsContinuesOnToolError(t *testing.T) {
 	client := &failOnceClient{}
-	agent := NewChatAgent(client, nil)
+	agent := NewChatAgent(client)
 
 	ch, err := agent.streamWithTools(context.Background(),
 		[]llm.Message{llm.NewMessage(llm.RoleUser, "cherche")},

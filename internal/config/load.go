@@ -35,6 +35,39 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
+// validateMCPServers vérifie les invariants de transport d'une liste de
+// serveurs MCP (déclarée par un agent ou une persona) ainsi que l'unicité de
+// leurs noms au sein de cette liste — un nom identifie le serveur dans les
+// journaux et sert de clé de fusion agent/persona (cf.
+// model.MergeMCPServers). scope préfixe les messages d'erreur (« agent "x" »,
+// « persona "y" »).
+func validateMCPServers(scope string, servers []MCPServerConfig) error {
+	names := make(map[string]struct{}, len(servers))
+	for _, s := range servers {
+		if s.Name == "" {
+			return fmt.Errorf("%s: un serveur mcp sans nom a été déclaré", scope)
+		}
+		if _, dup := names[s.Name]; dup {
+			return fmt.Errorf("%s: serveur mcp %q: nom dupliqué", scope, s.Name)
+		}
+		names[s.Name] = struct{}{}
+
+		switch s.Type {
+		case "", "http":
+			if s.URL == "" {
+				return fmt.Errorf("%s: serveur mcp %q: url requise (transport http)", scope, s.Name)
+			}
+		case "stdio":
+			if s.Command == "" {
+				return fmt.Errorf("%s: serveur mcp %q: command requise (transport stdio)", scope, s.Name)
+			}
+		default:
+			return fmt.Errorf("%s: serveur mcp %q: type %q inconnu (http|stdio)", scope, s.Name, s.Type)
+		}
+	}
+	return nil
+}
+
 var emailPattern = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$|^\*@[^@\s]+\.[^@\s]+$|^[^@\s]*\*[^@\s]*@[^@\s]+\.[^@\s]+$`)
 
 // Validate vérifie la cohérence référentielle et les invariants de la
@@ -77,6 +110,9 @@ func (c *Config) Validate() error {
 		}
 		if a.APIKey == "" {
 			return fmt.Errorf("agent %q: api_key requis", a.Name)
+		}
+		if err := validateMCPServers(fmt.Sprintf("agent %q", a.Name), a.MCPServers); err != nil {
+			return err
 		}
 		agents[a.Name] = struct{}{}
 	}
@@ -177,6 +213,8 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	// Les serveurs MCP déclarés par les personas s'ajoutent à ceux de l'agent
+	// pour les utilisateurs correspondants (cf. PersonaConfig.MCPServers).
 	names := make(map[string]struct{}, len(c.Personas))
 	for _, p := range c.Personas {
 		if p.Name == "" {
@@ -187,8 +225,13 @@ func (c *Config) Validate() error {
 		}
 		names[p.Name] = struct{}{}
 
-		if p.Prompt == "" {
-			return fmt.Errorf("persona %q: prompt requis", p.Name)
+		// Une persona doit apporter quelque chose : du contexte (prompt), des
+		// outils (mcp_servers), ou les deux.
+		if p.Prompt == "" && len(p.MCPServers) == 0 {
+			return fmt.Errorf("persona %q: prompt ou mcp_servers requis", p.Name)
+		}
+		if err := validateMCPServers(fmt.Sprintf("persona %q", p.Name), p.MCPServers); err != nil {
+			return err
 		}
 		if len(p.Filters) == 0 {
 			return fmt.Errorf("persona %q: au moins un filtre d'email est requis", p.Name)

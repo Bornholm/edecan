@@ -41,9 +41,69 @@ func TestValidatePersonas(t *testing.T) {
 			wantErr: "sans nom",
 		},
 		{
-			name:    "sans prompt",
+			name: "persona sans prompt mais dotée de serveurs mcp",
+			persona: PersonaConfig{
+				Name:       "p",
+				Filters:    []string{"*@exemple.com"},
+				MCPServers: []MCPServerConfig{{Name: "docs", URL: "https://mcp.exemple.com"}},
+			},
+		},
+		{
+			name: "serveur mcp stdio valide",
+			persona: PersonaConfig{
+				Name:       "p",
+				Prompt:     "ctx",
+				Filters:    []string{"*@exemple.com"},
+				MCPServers: []MCPServerConfig{{Name: "fs", Type: "stdio", Command: "npx"}},
+			},
+		},
+		{
+			name:    "sans prompt ni serveur mcp",
 			persona: PersonaConfig{Name: "p", Filters: []string{"*@exemple.com"}},
-			wantErr: "prompt requis",
+			wantErr: "prompt ou mcp_servers requis",
+		},
+		{
+			name: "serveur mcp http sans url",
+			persona: PersonaConfig{
+				Name:       "p",
+				Prompt:     "ctx",
+				Filters:    []string{"*@exemple.com"},
+				MCPServers: []MCPServerConfig{{Name: "docs"}},
+			},
+			wantErr: "url requise",
+		},
+		{
+			name: "serveur mcp stdio sans command",
+			persona: PersonaConfig{
+				Name:       "p",
+				Prompt:     "ctx",
+				Filters:    []string{"*@exemple.com"},
+				MCPServers: []MCPServerConfig{{Name: "fs", Type: "stdio"}},
+			},
+			wantErr: "command requise",
+		},
+		{
+			name: "serveur mcp de type inconnu",
+			persona: PersonaConfig{
+				Name:       "p",
+				Prompt:     "ctx",
+				Filters:    []string{"*@exemple.com"},
+				MCPServers: []MCPServerConfig{{Name: "docs", Type: "sse", URL: "https://mcp.exemple.com"}},
+			},
+			wantErr: "inconnu",
+		},
+		{
+			name: "serveurs mcp homonymes",
+			persona: PersonaConfig{
+				Name:    "p",
+				Prompt:  "ctx",
+				Filters: []string{"*@exemple.com"},
+				MCPServers: []MCPServerConfig{
+					{Name: "docs", URL: "https://a.exemple.com"},
+					{Name: "docs", URL: "https://b.exemple.com"},
+				},
+			},
+			wantErr: "nom dupliqué",
 		},
 		{
 			name:    "sans filtre",

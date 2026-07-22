@@ -26,11 +26,18 @@ type Config struct {
 // l'agent pour donner du contexte sur l'interlocuteur. Projects est optionnel :
 // laissé vide, la persona s'applique à tous les projets ; renseigné, il
 // restreint sa portée aux projets listés (par slug).
+//
+// MCPServers est optionnel : les serveurs déclarés s'ajoutent à ceux de
+// l'agent pour les sessions des utilisateurs correspondants — de quoi réserver
+// des outils à une catégorie d'utilisateurs. Un serveur homonyme d'un serveur
+// de l'agent est ignoré (l'agent fait autorité). Au moins l'un de prompt ou
+// mcp_servers doit être renseigné.
 type PersonaConfig struct {
-	Name     string   `yaml:"name"`
-	Prompt   string   `yaml:"prompt"`
-	Filters  []string `yaml:"filters"`
-	Projects []string `yaml:"projects"`
+	Name       string            `yaml:"name"`
+	Prompt     string            `yaml:"prompt"`
+	Filters    []string          `yaml:"filters"`
+	Projects   []string          `yaml:"projects"`
+	MCPServers []MCPServerConfig `yaml:"mcp_servers"`
 }
 
 // ServerConfig regroupe les paramètres d'écoute HTTP et de session.

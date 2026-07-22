@@ -8,11 +8,13 @@ import (
 // Persona décrit une catégorie d'utilisateur connecté, identifiée par une série
 // de filtres d'email. Sa description (Prompt) est injectée dans le prompt
 // système de l'agent pour les sessions des utilisateurs correspondants, afin de
-// lui donner du contexte sur son interlocuteur.
+// lui donner du contexte sur son interlocuteur, et ses serveurs MCP
+// (MCPServers) s'ajoutent à ceux de l'agent pour ces mêmes sessions.
 //
 // Une persona est globale par défaut ; renseigner Projects restreint sa portée
 // aux projets listés (par slug). Un même utilisateur peut correspondre à
-// plusieurs personas : leurs descriptions sont alors toutes injectées.
+// plusieurs personas : leurs descriptions sont alors toutes injectées et leurs
+// serveurs MCP tous ajoutés.
 type Persona struct {
 	Name    string
 	Prompt  string
@@ -20,6 +22,11 @@ type Persona struct {
 	// Projects restreint la portée de la persona aux projets listés (par ID/
 	// slug). Vide ⇒ la persona s'applique à tous les projets.
 	Projects []ProjectID
+	// MCPServers sont les serveurs d'outils MCP ouverts en plus de ceux de
+	// l'agent aux sessions des utilisateurs correspondant à la persona — de
+	// quoi réserver des outils à une catégorie d'utilisateurs (ex. outils
+	// d'administration pour l'équipe interne).
+	MCPServers []MCPServer
 }
 
 // appliesToProject indique si la persona s'applique au projet donné.
@@ -42,16 +49,68 @@ func (p Persona) matchesEmail(matches func(pattern string) bool) bool {
 // un utilisateur donné.
 type Personas []Persona
 
-// ResolvePrompts retourne les descriptions (Prompt) des personas dont un filtre
-// correspond à l'utilisateur et dont la portée inclut projectID, dans l'ordre
-// de déclaration. matches capture l'email de l'utilisateur (cf.
-// Persona.matchesEmail).
-func (ps Personas) ResolvePrompts(projectID ProjectID, matches func(pattern string) bool) []string {
-	var out []string
+// Resolve retourne les personas dont un filtre correspond à l'utilisateur et
+// dont la portée inclut projectID, dans l'ordre de déclaration. matches
+// capture l'email de l'utilisateur (cf. Persona.matchesEmail).
+func (ps Personas) Resolve(projectID ProjectID, matches func(pattern string) bool) Personas {
+	var out Personas
 	for _, p := range ps {
 		if p.appliesToProject(projectID) && p.matchesEmail(matches) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// Prompts retourne les descriptions (Prompt) non vides des personas, dans
+// l'ordre — à appliquer au prompt système via AugmentSystemPrompt.
+func (ps Personas) Prompts() []string {
+	var out []string
+	for _, p := range ps {
+		if p.Prompt != "" {
 			out = append(out, p.Prompt)
 		}
+	}
+	return out
+}
+
+// MCPServers retourne les serveurs MCP déclarés par les personas, concaténés
+// dans l'ordre — à fusionner avec ceux de l'agent via MergeMCPServers.
+func (ps Personas) MCPServers() []MCPServer {
+	var out []MCPServer
+	for _, p := range ps {
+		out = append(out, p.MCPServers...)
+	}
+	return out
+}
+
+// ResolvePrompts retourne les descriptions des personas correspondantes
+// (raccourci Resolve + Prompts).
+func (ps Personas) ResolvePrompts(projectID ProjectID, matches func(pattern string) bool) []string {
+	return ps.Resolve(projectID, matches).Prompts()
+}
+
+// MergeMCPServers ajoute extra à base en ignorant tout serveur dont le nom est
+// déjà présent — plusieurs personas correspondantes peuvent déclarer le même
+// serveur, et un serveur de persona ne doit jamais redéfinir celui de l'agent
+// (base fait autorité). base n'est jamais mutée.
+func MergeMCPServers(base, extra []MCPServer) []MCPServer {
+	if len(extra) == 0 {
+		return base
+	}
+
+	seen := make(map[string]struct{}, len(base)+len(extra))
+	out := make([]MCPServer, 0, len(base)+len(extra))
+	for _, s := range base {
+		seen[s.Name] = struct{}{}
+		out = append(out, s)
+	}
+	for _, s := range extra {
+		if _, dup := seen[s.Name]; dup {
+			continue
+		}
+		seen[s.Name] = struct{}{}
+		out = append(out, s)
 	}
 	return out
 }

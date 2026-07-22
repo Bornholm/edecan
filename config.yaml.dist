@@ -189,6 +189,14 @@ projects:
 # prompt système de l'agent pour les sessions des utilisateurs correspondants,
 # afin de lui donner du contexte sur son interlocuteur. Un utilisateur peut
 # correspondre à plusieurs personas : leurs prompts sont alors tous injectés.
+#
+# Une persona peut aussi déclarer ses propres serveurs MCP (`mcp_servers`, même
+# format que pour un agent) : leurs outils s'ajoutent à ceux de l'agent, mais
+# uniquement pour les sessions des utilisateurs correspondants — de quoi
+# réserver des outils à une catégorie d'utilisateurs. Un serveur portant le nom
+# d'un serveur déjà déclaré par l'agent est ignoré (l'agent fait autorité), tout
+# comme un doublon entre deux personas correspondantes. Au moins l'un de
+# `prompt` ou `mcp_servers` doit être renseigné.
 personas:
   - name: client-premium
     prompt: |
@@ -204,6 +212,17 @@ personas:
     prompt: |
       L'utilisateur fait partie de l'équipe interne : tu peux employer un
       vocabulaire technique et référencer les outils internes sans les
-      détailler.
+      détailler. Les outils d'administration te sont accessibles pour lui.
     filters:
       - "*@support.exemple.com"
+    # Outils réservés à cette persona : ces serveurs MCP ne sont ouverts que
+    # pour les sessions des utilisateurs correspondant aux filtres ci-dessus.
+    # Comme pour un agent, chaque valeur d'en-tête est un template Go exécuté
+    # contre l'identité de la session (SessionID, UserEmail, UserDisplayName).
+    mcp_servers:
+      - name: administration
+        type: http
+        url: "${EDECAN_MCP_ADMIN_URL}"
+        headers:
+          Authorization: "Bearer ${EDECAN_MCP_ADMIN_TOKEN}"
+          X-User: "{{.UserEmail}}"

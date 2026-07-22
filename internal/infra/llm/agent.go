@@ -26,7 +26,9 @@ const forceAnswerInstruction = "Tu as atteint la limite d'appels d'outils dispon
 
 // ChatAgent implémente port.ChatAgent au-dessus d'un llm.Client genai.
 //
-// Les serveurs MCP de l'agent ne sont pas résolus une fois pour toutes :
+// Les serveurs MCP ne sont pas résolus une fois pour toutes : ils sont lus sur
+// le model.Agent reçu à chaque appel — l'appelant peut donc en ajouter à
+// l'agent configuré (cf. service.ChatService, serveurs MCP de persona) — et
 // chaque session de chat obtient sa propre connexion MCP (cf.
 // toolsForSession), créée à la demande lors de son premier message
 // nécessitant des outils — nécessaire pour que le templating des en-têtes
@@ -35,18 +37,16 @@ const forceAnswerInstruction = "Tu as atteint la limite d'appels d'outils dispon
 // ce scope une seule fois, à l'établissement de la connexion, jamais à
 // chaque appel d'outil.
 type ChatAgent struct {
-	client     llm.Client
-	mcpServers []model.MCPServer
+	client llm.Client
 
 	mu             sync.Mutex
 	toolsBySession map[string]*sessionTools
 }
 
 // NewChatAgent construit un port.ChatAgent à partir d'un llm.Client déjà
-// configuré pour le provider de l'agent (voir NewClient), et des serveurs
-// MCP de l'agent — vide si l'agent n'en déclare aucun.
-func NewChatAgent(client llm.Client, mcpServers []model.MCPServer) *ChatAgent {
-	return &ChatAgent{client: client, mcpServers: mcpServers}
+// configuré pour le provider de l'agent (voir NewClient).
+func NewChatAgent(client llm.Client) *ChatAgent {
+	return &ChatAgent{client: client}
 }
 
 var _ port.ChatAgent = (*ChatAgent)(nil)
@@ -64,11 +64,11 @@ var _ port.ChatAgent = (*ChatAgent)(nil)
 func (a *ChatAgent) StreamReply(ctx context.Context, agent model.Agent, history []model.Message) (<-chan port.ChatChunk, error) {
 	messages := toLLMMessages(agent.SystemPrompt, history)
 
-	if len(a.mcpServers) == 0 {
+	if len(agent.MCPServers) == 0 {
 		return a.streamPlain(ctx, messages, agent.MaxCompletionTokens, agent.ReasoningEffort)
 	}
 
-	tools, err := a.toolsForSession(ctx)
+	tools, err := a.toolsForSession(ctx, agent.MCPServers)
 	if err != nil {
 		return nil, fmt.Errorf("connexion aux serveurs MCP: %w", err)
 	}
@@ -104,11 +104,15 @@ func respReasoning(resp llm.ChatCompletionResponse) string {
 	return ""
 }
 
-// toolsForSession retourne les outils de la session portée par ctx (cf.
-// port.MCPIdentityFromContext), en réutilisant la connexion déjà établie
-// pour cette session le cas échéant — une seule connexion MCP par session
-// de chat, réutilisée pour tous ses messages (cf. doc ChatAgent).
-func (a *ChatAgent) toolsForSession(ctx context.Context) ([]llm.Tool, error) {
+// toolsForSession retourne les outils des servers pour la session portée par
+// ctx (cf. port.MCPIdentityFromContext), en réutilisant la connexion déjà
+// établie pour cette session le cas échéant — une seule connexion MCP par
+// session de chat, réutilisée pour tous ses messages (cf. doc ChatAgent).
+//
+// Le cache est indexé sur la seule session : servers ne dépend que de l'agent
+// du projet et des personas de son propriétaire, tous deux invariants pour une
+// session donnée à configuration fixée.
+func (a *ChatAgent) toolsForSession(ctx context.Context, servers []model.MCPServer) ([]llm.Tool, error) {
 	identity, _ := port.MCPIdentityFromContext(ctx)
 	key := identity.SessionID
 
@@ -123,7 +127,7 @@ func (a *ChatAgent) toolsForSession(ctx context.Context) ([]llm.Tool, error) {
 	// L'établissement de la connexion (I/O réseau + backoff de reconnexion) se
 	// fait hors du verrou : une session dont le serveur MCP est lent ou en
 	// échec ne doit pas bloquer les autres sessions le temps de ses tentatives.
-	st, err := newSessionTools(ctx, a.mcpServers)
+	st, err := newSessionTools(ctx, servers)
 	if err != nil {
 		return nil, err
 	}

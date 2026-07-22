@@ -209,13 +209,16 @@ func (s *ChatService) StreamAssistantReply(ctx context.Context, sessionID model.
 		return nil, err
 	}
 
-	// Injecte le contexte des personas correspondant à l'utilisateur pour ce
-	// projet dans le prompt système (agent est une copie — sûr à muter).
+	// Applique les personas correspondant à l'utilisateur pour ce projet :
+	// leur contexte enrichit le prompt système et leurs serveurs MCP s'ajoutent
+	// à ceux de l'agent (agent est une copie — sûr à muter ; MergeMCPServers ne
+	// mute pas le slice partagé de l'agent d'origine).
 	if s.matchEmail != nil {
-		prompts := s.personas.ResolvePrompts(sess.ProjectID, func(pattern string) bool {
+		matched := s.personas.Resolve(sess.ProjectID, func(pattern string) bool {
 			return s.matchEmail(user.Email, pattern)
 		})
-		agent.SystemPrompt = model.AugmentSystemPrompt(agent.SystemPrompt, prompts)
+		agent.SystemPrompt = model.AugmentSystemPrompt(agent.SystemPrompt, matched.Prompts())
+		agent.MCPServers = model.MergeMCPServers(agent.MCPServers, matched.MCPServers())
 	}
 
 	ctx = port.WithMCPIdentity(ctx, port.MCPIdentity{
