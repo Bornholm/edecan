@@ -144,6 +144,9 @@ func TestPublicViewSnapshotFiltering(t *testing.T) {
 		{Role: model.MessageRoleAssistant, Content: "réponse 1", CreatedAt: base.Add(time.Minute)},
 		// Résumé interne : ne doit jamais fuiter.
 		{Role: model.MessageRoleSummary, Content: "résumé interne", CreatedAt: base.Add(2 * time.Minute)},
+		// Tour d'outil : rôle assistant, mais mécanique interne — jamais exposé.
+		{Role: model.MessageRoleAssistant, ToolCalls: []model.ToolCall{{ID: "call-1", Name: "search", Arguments: "{}"}}, CreatedAt: base.Add(3 * time.Minute)},
+		{Role: model.MessageRoleTool, ToolCallID: "call-1", ToolName: "search", Content: "extrait interne", CreatedAt: base.Add(4 * time.Minute)},
 		// Message postérieur au partage : exclu de l'instantané figé.
 		{Role: model.MessageRoleUser, Content: "question ultérieure", CreatedAt: base.Add(time.Hour)},
 	}
@@ -166,6 +169,12 @@ func TestPublicViewSnapshotFiltering(t *testing.T) {
 		if m.Role == model.MessageRoleSummary || m.Role == model.MessageRoleSystem {
 			t.Fatalf("un rôle interne (%s) ne doit jamais être exposé publiquement", m.Role)
 		}
+		if m.IsToolTurn() {
+			t.Fatalf("un tour d'outil ne doit jamais être exposé publiquement: %+v", m)
+		}
+	}
+	if len(visible) != 3 {
+		t.Fatalf("attendu les 3 messages conversationnels, obtenu %d", len(visible))
 	}
 }
 

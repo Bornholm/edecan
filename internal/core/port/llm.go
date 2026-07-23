@@ -33,6 +33,13 @@ type ChatChunk struct {
 	// d'outil MCP (début/fin) — matière à un retour visuel dans le chat pendant
 	// la résolution des outils (cf. handler.StreamReply).
 	Tool *ToolActivity
+	// ToolTurn, s'il est non vide, porte les messages d'un aller-retour
+	// outil↔LLM résolu (le message d'appels décidé par l'agent, suivi d'un
+	// message par résultat d'outil), prêts à être persistés. L'appelant DOIT
+	// les accumuler dans l'ordre et les transmettre à la finalisation de la
+	// réponse : sans eux, l'agent perd au tour suivant toute trace de ce que
+	// ses outils ont retourné et peut jusqu'à nier avoir fait la recherche.
+	ToolTurn []model.Message
 	// Stage, s'il est non vide, signale un changement d'étape de haut niveau
 	// (cf. ChatStage) — un tel fragment ne porte ni contenu ni fin.
 	Stage ChatStage
@@ -55,8 +62,8 @@ const (
 
 // ToolActivity décrit un événement de cycle de vie de l'appel d'un outil MCP
 // par l'agent, pour un retour visuel en cours de génération (l'agent interroge
-// des outils avant de formuler sa réponse). Éphémère : non persisté avec le
-// message.
+// des outils avant de formuler sa réponse). Éphémère : la persistance du tour
+// d'outil passe par ChatChunk.ToolTurn, pas par ces événements.
 type ToolActivity struct {
 	Name  string
 	Phase ToolPhase

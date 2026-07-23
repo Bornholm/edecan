@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"edecan/internal/core/model"
@@ -232,8 +233,12 @@ func (s *ChatService) StreamAssistantReply(ctx context.Context, sessionID model.
 		return nil, err
 	}
 
-	if len(history) > summarizeMinMessages {
-		older := history[:len(history)-summarizeKeepRecent]
+	// Le déclenchement du résumé se mesure sur les seuls échanges : compter les
+	// tours d'outils y ferait basculer une conversation courte dès qu'elle
+	// mobilise beaucoup d'outils, alors que le résumé porte sur les messages.
+	conversation := model.ConversationOnly(history)
+	if len(conversation) > summarizeMinMessages {
+		older := conversation[:len(conversation)-summarizeKeepRecent]
 		summaryText, err := chatAgent.Summarize(ctx, agent, older)
 		if err == nil && summaryText != "" {
 			summaryTime := older[len(older)-1].CreatedAt.Add(time.Millisecond)
@@ -255,7 +260,25 @@ func (s *ChatService) StreamAssistantReply(ctx context.Context, sessionID model.
 // FinalizeReply persiste la réponse complète de l'agent une fois le
 // streaming terminé. reasoning porte le raisonnement éventuel exposé par le
 // modèle (vide sinon) — stocké à part du contenu, pour affichage seulement.
-func (s *ChatService) FinalizeReply(ctx context.Context, sessionID model.SessionID, content, reasoning string) error {
+//
+// toolTurns porte les allers-retours outil↔LLM résolus pendant la génération
+// (cf. port.ChatChunk.ToolTurn), persistés avant la réponse et dans leur ordre
+// d'apparition : c'est ce qui permet à l'agent de retrouver, aux tours
+// suivants, ce que ses outils ont réellement retourné. Ils ne sont enregistrés
+// qu'ici, avec la réponse : une génération interrompue ne laisse donc aucune
+// trace partielle, et le retry repart d'un historique propre.
+func (s *ChatService) FinalizeReply(ctx context.Context, sessionID model.SessionID, content, reasoning string, toolTurns []model.Message) error {
+	for i := range toolTurns {
+		turn := toolTurns[i]
+		turn.SessionID = sessionID
+		turn.CreatedAt = time.Now()
+		if err := s.messages.Save(ctx, &turn); err != nil {
+			// Perdre un tour d'outil dégrade la mémoire de l'agent mais ne doit
+			// pas coûter la réponse elle-même : on journalise et on poursuit.
+			slog.ErrorContext(ctx, "persistance d'un tour d'outil", "session_id", sessionID, "error", err)
+		}
+	}
+
 	msg := &model.Message{SessionID: sessionID, Role: model.MessageRoleAssistant, Content: content, Reasoning: reasoning, CreatedAt: time.Now()}
 	if err := s.messages.Save(ctx, msg); err != nil {
 		return err

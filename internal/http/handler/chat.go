@@ -38,9 +38,15 @@ func buildSessionEntries(sessions []*model.Session, activeID string) []page.Sess
 	return entries
 }
 
+// buildMessageProps projette l'historique en bulles de conversation. Les tours
+// d'outils sont écartés : ils sont persistés pour la mémoire de l'agent, pas
+// pour être lus (un message d'appels n'a d'ailleurs aucun contenu à afficher).
 func buildMessageProps(messages []*model.Message, authorName string) []component.ChatMessageProps {
 	props := make([]component.ChatMessageProps, 0, len(messages))
 	for _, m := range messages {
+		if m.IsToolTurn() {
+			continue
+		}
 		props = append(props, component.ChatMessageProps{
 			Role:       string(m.Role),
 			Content:    m.Content,
@@ -394,6 +400,10 @@ func (h *Handlers) StreamReply(w http.ResponseWriter, r *http.Request) {
 	var content strings.Builder
 	var reasoning strings.Builder
 	var tools []string
+	// Tours d'outils résolus pendant la génération, à persister avec la réponse
+	// finale (cf. ChatService.FinalizeReply) : sans eux, l'agent perdrait au
+	// tour suivant le résultat de ses propres recherches.
+	var toolTurns []model.Message
 	statusCleared := false
 	var fatalErr error
 
@@ -424,6 +434,8 @@ loop:
 				writeAssistantFragment(w, flusher, r, content.String(), reasoning.String(), tools, true)
 			case chunk.Tool != nil:
 				h.handleToolChunk(w, flusher, r, chunk.Tool, &content, &reasoning, &tools)
+			case len(chunk.ToolTurn) > 0:
+				toolTurns = append(toolTurns, chunk.ToolTurn...)
 			default:
 				content.WriteString(chunk.Content)
 				// Premier contenu : on efface la zone de statut, la bulle prend
@@ -464,7 +476,7 @@ loop:
 		return
 	}
 
-	if err := h.ChatService.FinalizeReply(ctx, sessionID, content.String(), reasoning.String()); err != nil {
+	if err := h.ChatService.FinalizeReply(ctx, sessionID, content.String(), reasoning.String(), toolTurns); err != nil {
 		h.Logger.ErrorContext(ctx, "persistance de la réponse de l'agent", "error", err)
 	}
 	// Ré-émission de la bulle finale sans curseur (section de raisonnement

@@ -265,6 +265,7 @@ func (a *ChatAgent) streamWithTools(ctx context.Context, messages []llm.Message,
 			}
 
 			messages = append(messages, llm.NewToolCallsMessage(toolCalls...))
+			turn := []model.Message{toolCallsRecord(toolCalls)}
 			for _, tc := range toolCalls {
 				toolMsg, ok := a.runToolCall(ctx, out, tc, tools, toolTimeout)
 				if !ok {
@@ -272,6 +273,13 @@ func (a *ChatAgent) streamWithTools(ctx context.Context, messages []llm.Message,
 					return
 				}
 				messages = append(messages, toolMsg)
+				turn = append(turn, toolResultRecord(tc, toolMsg))
+			}
+			// Le tour est complet (chaque appel a son résultat) : on le remonte
+			// pour persistance, afin qu'il soit rejoué dans le contexte des
+			// tours suivants (cf. port.ChatChunk.ToolTurn).
+			if !sendOrCancel(ctx, out, port.ChatChunk{ToolTurn: turn}) {
+				return
 			}
 		}
 
@@ -371,7 +379,10 @@ func sendOrCancel(ctx context.Context, out chan<- port.ChatChunk, chunk port.Cha
 func (a *ChatAgent) Summarize(ctx context.Context, agent model.Agent, history []model.Message) (string, error) {
 	const summaryInstruction = "Résume la conversation précédente de façon concise, en conservant les faits et décisions importants. Réponds uniquement avec le résumé en Markdown."
 
-	messages := toLLMMessages(agent.SystemPrompt, history)
+	// Le résumé porte sur les échanges, pas sur la mécanique d'outils : rejouer
+	// les tours d'outils ici ne ferait qu'alourdir le contexte, et exposerait au
+	// risque d'un tour dépareillé si la fenêtre à résumer coupe l'un d'eux.
+	messages := toLLMMessages(agent.SystemPrompt, model.ConversationOnly(history))
 	messages = append(messages, llm.NewMessage(llm.RoleUser, summaryInstruction))
 
 	resp, err := a.client.ChatCompletion(ctx, llm.WithMessages(messages...))
@@ -390,7 +401,9 @@ func (a *ChatAgent) DraftTicket(ctx context.Context, agent model.Agent, history 
 		"---\n" +
 		"<corps du ticket en Markdown>"
 
-	messages := toLLMMessages(agent.SystemPrompt, history)
+	// Comme pour Summarize : le brouillon se rédige à partir des échanges, pas
+	// du déroulé technique des appels d'outils.
+	messages := toLLMMessages(agent.SystemPrompt, model.ConversationOnly(history))
 	messages = append(messages, llm.NewMessage(llm.RoleUser, draftInstruction))
 
 	resp, err := a.client.ChatCompletion(ctx, llm.WithMessages(messages...))
@@ -401,13 +414,53 @@ func (a *ChatAgent) DraftTicket(ctx context.Context, agent model.Agent, history 
 	return parseDraft(resp.Message().Content())
 }
 
+// toLLMMessages reconstruit le contexte envoyé au modèle à partir de
+// l'historique persisté, tours d'outils compris : un message d'appels devient
+// un llm.ToolCallsMessage, un résultat un llm.ToolMessage — c'est ce rejeu qui
+// permet à l'agent de se souvenir, aux tours suivants, de ce que ses outils ont
+// retourné (et donc de citer ses sources plutôt que de nier avoir cherché).
+//
+// Les tours dépareillés sont écartés : un résultat sans son appel — ou un appel
+// sans son résultat — viole l'invariant « une réponse par appel d'outil » des
+// API de complétion et ferait échouer la requête. Le cas se produit dès que
+// l'historique est tronqué au milieu d'un tour (cf. résumé de contexte,
+// service.ChatService.llmContext).
 func toLLMMessages(systemPrompt string, history []model.Message) []llm.Message {
 	messages := make([]llm.Message, 0, len(history)+1)
 	if systemPrompt != "" {
 		messages = append(messages, llm.NewMessage(llm.RoleSystem, systemPrompt))
 	}
+
+	results := make(map[string]bool, len(history))
 	for _, m := range history {
-		messages = append(messages, llm.NewMessage(toLLMRole(m.Role), m.Content))
+		if m.Role == model.MessageRoleTool && m.ToolCallID != "" {
+			results[m.ToolCallID] = true
+		}
+	}
+
+	emitted := make(map[string]bool, len(results))
+	for _, m := range history {
+		switch {
+		case len(m.ToolCalls) > 0:
+			calls := make([]llm.ToolCall, 0, len(m.ToolCalls))
+			for _, tc := range m.ToolCalls {
+				if !results[tc.ID] {
+					continue
+				}
+				calls = append(calls, llm.NewToolCall(tc.ID, tc.Name, tc.Arguments))
+				emitted[tc.ID] = true
+			}
+			if len(calls) > 0 {
+				messages = append(messages, llm.NewToolCallsMessage(calls...))
+			}
+		case m.Role == model.MessageRoleTool:
+			if !emitted[m.ToolCallID] {
+				continue
+			}
+			messages = append(messages, llm.NewToolMessage(m.ToolCallID, llm.NewToolResult(m.Content)))
+		default:
+			messages = append(messages, llm.NewMessage(toLLMRole(m.Role), m.Content))
+		}
 	}
 	return messages
 }

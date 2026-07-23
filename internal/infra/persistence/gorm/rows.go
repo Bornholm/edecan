@@ -41,13 +41,21 @@ type SessionRow struct {
 func (SessionRow) TableName() string { return "sessions" }
 
 // MessageRow est la projection GORM de model.Message.
+//
+// ToolCalls stocke les appels d'outils d'un message d'assistant sérialisés en
+// JSON plutôt que dans une table dédiée : ils ne sont jamais interrogés
+// individuellement, seulement relus en bloc pour reconstruire le contexte du
+// LLM (cf. internal/infra/llm.toLLMMessages).
 type MessageRow struct {
-	ID        uint `gorm:"primaryKey"`
-	SessionID uint `gorm:"index"`
-	Role      string
-	Content   string
-	Reasoning string
-	CreatedAt time.Time
+	ID         uint `gorm:"primaryKey"`
+	SessionID  uint `gorm:"index"`
+	Role       string
+	Content    string
+	Reasoning  string
+	ToolCalls  string
+	ToolCallID string
+	ToolName   string
+	CreatedAt  time.Time
 }
 
 func (MessageRow) TableName() string { return "messages" }

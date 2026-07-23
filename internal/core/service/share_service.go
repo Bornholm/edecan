@@ -124,10 +124,15 @@ func (s *ShareService) PublicView(ctx context.Context, token model.ShareToken) (
 
 	// Instantané figé : n'exposer que les échanges antérieurs ou contemporains
 	// au partage, et uniquement les rôles conversationnels — jamais system/
-	// summary (fuite de contexte interne), jamais la suite privée.
+	// summary ni tour d'outil (fuite de contexte interne, et les résultats
+	// d'outils peuvent porter des données hors du champ du partage), jamais la
+	// suite privée.
 	visible := make([]*model.Message, 0, len(all))
 	for _, m := range all {
 		if m.Role != model.MessageRoleUser && m.Role != model.MessageRoleAssistant {
+			continue
+		}
+		if m.IsToolTurn() {
 			continue
 		}
 		if m.CreatedAt.After(share.SharedAt) {
