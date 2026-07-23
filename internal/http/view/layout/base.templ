@@ -15,7 +15,10 @@ templ Base(title string) {
 	<html lang="fr" data-theme="dark">
 		<head>
 			<meta charset="UTF-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			// viewport-fit=cover active les variables env(safe-area-inset-*) : les
+			// barres du chat (topbar, composer) s'écartent alors des encoches et de
+			// l'indicateur d'accueil des téléphones à écran plein bord.
+			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 			<title>{ title } · edecán</title>
 			<script>
 				(function() {

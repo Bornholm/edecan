@@ -256,12 +256,12 @@ func Chat(props ChatProps) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"><button type=\"submit\" class=\"edc-btn edc-btn--primary-subtle edc-btn--sm\" style=\"margin-top:4px;\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 5v14M5 12h14\"></path></svg> Nouvelle session</button></form></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"><button type=\"submit\" class=\"edc-btn edc-btn--primary-subtle edc-btn--sm\" style=\"margin-top:4px;\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 5v14M5 12h14\"></path></svg> Nouvelle session</button></form><button type=\"button\" class=\"edc-btn edc-btn--secondary edc-btn--sm edc-mobile-only\" data-edc-rail-toggle aria-controls=\"edc-rail\" aria-expanded=\"false\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6h18M3 12h18M3 18h18\"></path></svg> Voir mes sessions</button></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"edc-chat\"><div class=\"edc-chat-header\"><div class=\"edc-chat-header__inner\"><div style=\"min-width:0;\"><div class=\"edc-chat-header__title\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"edc-chat\"><div class=\"edc-chat-header\"><div class=\"edc-chat-header__inner\"><div class=\"edc-chat-header__main\"><div class=\"edc-chat-header__title\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -269,7 +269,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var13 string
 					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(props.CurrentSession.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 131, Col: 36}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 140, Col: 36}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 					if templ_7745c5c3_Err != nil {
@@ -283,7 +283,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(props.CurrentSession.ID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 133, Col: 42}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 142, Col: 42}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -302,7 +302,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var15 templ.SafeURL
 					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/projects/" + props.ProjectSlug + "/tickets/" + props.CurrentSession.TicketRef))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 140, Col: 149}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 149, Col: 149}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 					if templ_7745c5c3_Err != nil {
@@ -315,7 +315,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var16 string
 					templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(props.CurrentSession.TicketRef)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 141, Col: 49}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 150, Col: 49}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 					if templ_7745c5c3_Err != nil {
@@ -333,7 +333,7 @@ func Chat(props ChatProps) templ.Component {
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL(sessionHref(props.ProjectSlug, props.CurrentSession.ID) + "/share")))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 150, Col: 106}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 159, Col: 106}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 				if templ_7745c5c3_Err != nil {
@@ -374,7 +374,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var19 string
 					templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL(sessionHref(props.ProjectSlug, props.CurrentSession.ID) + "/relevance")))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 168, Col: 111}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 177, Col: 111}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 					if templ_7745c5c3_Err != nil {
@@ -393,7 +393,7 @@ func Chat(props ChatProps) templ.Component {
 					var templ_7745c5c3_Var20 string
 					templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL(sessionHref(props.ProjectSlug, props.CurrentSession.ID) + "/handover/modal")))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 182, Col: 115}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 191, Col: 115}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 					if templ_7745c5c3_Err != nil {
@@ -421,13 +421,13 @@ func Chat(props ChatProps) templ.Component {
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL(sessionHref(props.ProjectSlug, props.CurrentSession.ID) + "/messages")))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 203, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 212, Col: 108}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" hx-target=\"#messages\" hx-swap=\"beforeend\" hx-on::after-request=\"this.reset()\"><textarea id=\"composer-input\" name=\"content\" rows=\"1\" class=\"edc-chat__composer-input\" placeholder=\"Posez votre question… (Entrée pour envoyer)\" required hx-on:keydown=\"if(event.key==='Enter' && !event.shiftKey){event.preventDefault();this.closest('form').requestSubmit();}\"></textarea> <button type=\"submit\" class=\"edc-chat__composer-send\" aria-label=\"Envoyer\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z\"></path></svg></button></form></div></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" hx-target=\"#messages\" hx-swap=\"beforeend\" hx-on::after-request=\"this.reset()\"><textarea id=\"composer-input\" name=\"content\" rows=\"1\" class=\"edc-chat__composer-input\" placeholder=\"Posez votre question…\" data-edc-placeholder-wide=\"Posez votre question… (Entrée pour envoyer)\" required></textarea> <button type=\"submit\" class=\"edc-chat__composer-send\" aria-label=\"Envoyer\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z\"></path></svg></button></form></div></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -492,7 +492,7 @@ func AssistantStreamPlaceholder(projectSlug, sessionID string) templ.Component {
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.ResolveAttributeValue("/projects/" + projectSlug + "/chat/" + sessionID + "/stream")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 244, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 259, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 		if templ_7745c5c3_Err != nil {
@@ -558,7 +558,7 @@ func AssistantStreamStatus(text string, timed bool) templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 269, Col: 15}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 284, Col: 15}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -619,7 +619,7 @@ func AssistantStreamError(projectSlug, sessionID, message string) templ.Componen
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 295, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 310, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
@@ -632,7 +632,7 @@ func AssistantStreamError(projectSlug, sessionID, message string) templ.Componen
 		var templ_7745c5c3_Var28 string
 		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL(sessionHref(projectSlug, sessionID) + "/retry")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 299, Col: 83}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 314, Col: 83}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var28)
 		if templ_7745c5c3_Err != nil {
@@ -729,7 +729,7 @@ func HandoverModal(projectSlug, sessionID string) templ.Component {
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL("/projects/" + projectSlug + "/chat/" + sessionID + "/handover/draft")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 344, Col: 106}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 359, Col: 106}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var32)
 		if templ_7745c5c3_Err != nil {
@@ -789,7 +789,7 @@ func HandoverDraftFragment(projectSlug, sessionID, title, body, errorMessage str
 		var templ_7745c5c3_Var34 string
 		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL("/projects/" + projectSlug + "/chat/" + sessionID + "/handover")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 377, Col: 98}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/chat.templ`, Line: 392, Col: 98}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
 		if templ_7745c5c3_Err != nil {
@@ -811,7 +811,7 @@ func HandoverDraftFragment(projectSlug, sessionID, title, body, errorMessage str
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "</div><div class=\"edc-modal__footer\" style=\"margin:var(--space-4) -22px -20px;\"><button type=\"button\" class=\"edc-btn edc-btn--ghost edc-btn--md\" onclick=\"document.getElementById('modal-root').innerHTML=''\">Annuler</button>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "</div><div class=\"edc-modal__footer edc-modal__footer--flush\"><button type=\"button\" class=\"edc-btn edc-btn--ghost edc-btn--md\" onclick=\"document.getElementById('modal-root').innerHTML=''\">Annuler</button>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

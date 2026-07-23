@@ -159,8 +159,36 @@
     return el && el.matches && el.matches(".edc-chat__composer");
   }
 
+  // Sur un clavier virtuel, Entrée sert à passer à la ligne : l'envoi n'y passe
+  // que par le bouton. Le test porte sur l'absence de pointeur grossier plutôt
+  // que sur la présence d'un pointeur fin, afin que le raccourci reste actif
+  // par défaut si le navigateur ne renseigne aucune de ces caractéristiques.
+  function hasKeyboard() {
+    return !window.matchMedia || !window.matchMedia("(pointer: coarse)").matches;
+  }
+
   window.edc.register("composer", {
     init: function () {
+      const input = document.querySelector(".edc-chat__composer-input");
+      if (input && hasKeyboard() && input.dataset.edcPlaceholderWide) {
+        input.setAttribute("placeholder", input.dataset.edcPlaceholderWide);
+      }
+      document.addEventListener("keydown", function (evt) {
+        if (
+          evt.key !== "Enter" ||
+          evt.shiftKey ||
+          !hasKeyboard() ||
+          !evt.target.matches ||
+          !evt.target.matches(".edc-chat__composer-input")
+        ) {
+          return;
+        }
+        const form = evt.target.closest("form");
+        if (form) {
+          evt.preventDefault();
+          form.requestSubmit();
+        }
+      });
       // Envoi du message : blocage immédiat (avant même l'ouverture du flux).
       document.body.addEventListener("htmx:beforeRequest", function (evt) {
         if (isComposer(evt.target)) {
@@ -366,6 +394,103 @@
           }
         );
       });
+    },
+  });
+})();
+
+// ── Module rail : tiroir latéral sur petit écran ─────────────────────────────
+//
+// Sous le point de rupture mobile, le rail (marque, projet, navigation, liste
+// contextuelle, utilisateur) sort du flux : il devient un tiroir hors-écran
+// ouvert par le bouton de la barre supérieure (cf. layout.Shell). Tout est
+// piloté par la classe `edc-app--rail-open` posée sur `.edc-app` — le CSS gère
+// la translation et le voile ; ce module ne fait qu'ouvrir/fermer.
+//
+// Le rail appartient à la coquille, jamais remplacée par htmx : les
+// gestionnaires sont malgré tout posés en délégation sur `document` pour rester
+// valides si un fragment recompose la liste contextuelle.
+(function () {
+  "use strict";
+
+  const OPEN_CLASS = "edc-app--rail-open";
+  // Doit rester aligné sur la media query du CSS (components.css §Responsive).
+  const DESKTOP = "(min-width: 861px)";
+
+  function app() {
+    return document.querySelector(".edc-app");
+  }
+
+  function isOpen() {
+    const el = app();
+    return !!el && el.classList.contains(OPEN_CLASS);
+  }
+
+  function setOpen(open) {
+    const el = app();
+    if (!el) {
+      return;
+    }
+    el.classList.toggle(OPEN_CLASS, open);
+    // Plusieurs déclencheurs coexistent (barre supérieure, états vides des
+    // panneaux) : tous doivent refléter l'état du tiroir.
+    document.querySelectorAll("[data-edc-rail-toggle]").forEach(function (t) {
+      t.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    // Le tiroir couvre la page : on gèle le défilement du document derrière lui.
+    document.body.style.overflow = open ? "hidden" : "";
+    if (open) {
+      const rail = document.getElementById("edc-rail");
+      const first = rail && rail.querySelector("[data-edc-rail-close]");
+      if (first) {
+        first.focus();
+      }
+    }
+  }
+
+  window.edc.register("rail", {
+    open: function () {
+      setOpen(true);
+    },
+    close: function () {
+      setOpen(false);
+    },
+    init: function () {
+      document.addEventListener("click", function (evt) {
+        if (evt.target.closest("[data-edc-rail-toggle]")) {
+          setOpen(!isOpen());
+          return;
+        }
+        if (evt.target.closest("[data-edc-rail-close]")) {
+          setOpen(false);
+          return;
+        }
+        // Naviguer depuis le tiroir (session, ticket, projet, onglet) doit le
+        // refermer : les liens rechargent la page, mais les actions htmx du rail
+        // (nouvelle session, suppression) la laisseraient ouverte sur le contenu.
+        if (isOpen() && evt.target.closest("#edc-rail a, #edc-rail button")) {
+          setOpen(false);
+        }
+      });
+
+      document.addEventListener("keydown", function (evt) {
+        if (evt.key === "Escape" && isOpen()) {
+          setOpen(false);
+        }
+      });
+
+      // Repasser en desktop pendant que le tiroir est ouvert doit restaurer
+      // l'état normal (rail en colonne, défilement du document rendu).
+      const desktop = window.matchMedia(DESKTOP);
+      const onChange = function (e) {
+        if (e.matches) {
+          setOpen(false);
+        }
+      };
+      if (desktop.addEventListener) {
+        desktop.addEventListener("change", onChange);
+      } else if (desktop.addListener) {
+        desktop.addListener(onChange);
+      }
     },
   });
 })();

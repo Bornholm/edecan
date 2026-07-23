@@ -117,7 +117,7 @@ func Tickets(props TicketsProps) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"edc-empty\"><div class=\"edc-empty__icon\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2\"></path></svg></div><div class=\"edc-empty__title\">Sélectionnez un ticket</div><div class=\"edc-empty__subtitle\">Cliquez sur un ticket dans la liste</div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"edc-empty\"><div class=\"edc-empty__icon\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2\"></path></svg></div><div class=\"edc-empty__title\">Sélectionnez un ticket</div><div class=\"edc-empty__subtitle\">Cliquez sur un ticket dans la liste</div><button type=\"button\" class=\"edc-btn edc-btn--secondary edc-btn--sm edc-mobile-only\" data-edc-rail-toggle aria-controls=\"edc-rail\" aria-expanded=\"false\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6h18M3 12h18M3 18h18\"></path></svg> Voir mes tickets</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -227,7 +227,7 @@ func NewTicketFormFragment(projectSlug, errorMessage string) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.ResolveAttributeValue(string(templ.SafeURL("/projects/" + projectSlug + "/tickets")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/tickets.templ`, Line: 108, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/http/view/page/tickets.templ`, Line: 116, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 		if templ_7745c5c3_Err != nil {
@@ -249,7 +249,7 @@ func NewTicketFormFragment(projectSlug, errorMessage string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div><div id=\"new-ticket-attachments-preview\" class=\"edc-ticket-composer__attachments\"></div><div class=\"edc-modal__footer\" style=\"margin:var(--space-4) -22px -20px;justify-content:space-between;\"><label for=\"new-ticket-attachments-input\" class=\"edc-ticket-composer__attach\" title=\"Joindre un fichier à ce ticket\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48\"></path></svg> Joindre un fichier</label> <input id=\"new-ticket-attachments-input\" class=\"edc-ticket-composer__attach-input\" type=\"file\" name=\"attachments\" multiple onchange=\"document.getElementById('new-ticket-attachments-preview').textContent = this.files.length ? Array.from(this.files).map(f => f.name).join(', ') : ''\"><div style=\"display:flex;gap:var(--space-3);\"><button type=\"button\" class=\"edc-btn edc-btn--ghost edc-btn--md\" onclick=\"document.getElementById('modal-root').innerHTML=''\">Annuler</button>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div><div id=\"new-ticket-attachments-preview\" class=\"edc-ticket-composer__attachments\"></div><div class=\"edc-modal__footer edc-modal__footer--flush edc-modal__footer--split\"><label for=\"new-ticket-attachments-input\" class=\"edc-ticket-composer__attach\" title=\"Joindre un fichier à ce ticket\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48\"></path></svg> Joindre un fichier</label> <input id=\"new-ticket-attachments-input\" class=\"edc-ticket-composer__attach-input\" type=\"file\" name=\"attachments\" multiple onchange=\"document.getElementById('new-ticket-attachments-preview').textContent = this.files.length ? Array.from(this.files).map(f => f.name).join(', ') : ''\"><div style=\"display:flex;gap:var(--space-3);\"><button type=\"button\" class=\"edc-btn edc-btn--ghost edc-btn--md\" onclick=\"document.getElementById('modal-root').innerHTML=''\">Annuler</button>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

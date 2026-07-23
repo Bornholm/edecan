@@ -120,12 +120,21 @@ templ Chat(props ChatProps) {
 						Nouvelle session
 					</button>
 				</form>
+				// Sur petit écran la liste des sessions est repliée dans le tiroir :
+				// sans ce raccourci, l'invitation ci-dessus désigne un panneau
+				// invisible.
+				<button type="button" class="edc-btn edc-btn--secondary edc-btn--sm edc-mobile-only" data-edc-rail-toggle aria-controls="edc-rail" aria-expanded="false">
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M3 6h18M3 12h18M3 18h18"></path>
+					</svg>
+					Voir mes sessions
+				</button>
 			</div>
 		} else {
 			<div class="edc-chat">
 				<div class="edc-chat-header">
 					<div class="edc-chat-header__inner">
-					<div style="min-width:0;">
+					<div class="edc-chat-header__main">
 						<div class="edc-chat-header__title">
 							if props.CurrentSession.Title != "" {
 								{ props.CurrentSession.Title }
@@ -205,14 +214,20 @@ templ Chat(props ChatProps) {
 						hx-swap="beforeend"
 						hx-on::after-request="this.reset()"
 					>
+						// Le placeholder court est celui du mobile ; app.js (module
+						// composer) lui substitue data-edc-placeholder-wide sur les
+						// pointeurs fins, où « Entrée pour envoyer » s'applique et où la
+						// place ne manque pas. L'envoi au clavier est lui aussi géré par
+						// app.js : sur un clavier virtuel, Entrée doit rester un retour à
+						// la ligne.
 						<textarea
 							id="composer-input"
 							name="content"
 							rows="1"
 							class="edc-chat__composer-input"
-							placeholder="Posez votre question… (Entrée pour envoyer)"
+							placeholder="Posez votre question…"
+							data-edc-placeholder-wide="Posez votre question… (Entrée pour envoyer)"
 							required
-							hx-on:keydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();this.closest('form').requestSubmit();}"
 						></textarea>
 						<button type="submit" class="edc-chat__composer-send" aria-label="Envoyer">
 							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -382,7 +397,7 @@ templ HandoverDraftFragment(projectSlug, sessionID, title, body, errorMessage st
 		<div style="margin-top:var(--space-3);">
 			@component.Textarea(component.TextareaProps{ID: "draft-body", Name: "body", Label: "Corps (Markdown)", Value: body, Rows: 12, Required: true, Mono: true})
 		</div>
-		<div class="edc-modal__footer" style="margin:var(--space-4) -22px -20px;">
+		<div class="edc-modal__footer edc-modal__footer--flush">
 			<button type="button" class="edc-btn edc-btn--ghost edc-btn--md" onclick="document.getElementById('modal-root').innerHTML=''">
 				Annuler
 			</button>

@@ -56,7 +56,44 @@ func userInitials(name string) string {
 templ Shell(props ShellProps) {
 	@Base(props.Title) {
 		<div class="edc-app">
-			<aside class="edc-rail">
+			// Barre supérieure affichée uniquement sur petit écran : elle porte le
+			// bouton d'ouverture du rail (devenu tiroir hors-écran) et rappelle le
+			// contexte courant, le rail n'étant alors plus visible en permanence.
+			<header class="edc-topbar">
+				<button
+					type="button"
+					class="edc-topbar__menu"
+					data-edc-rail-toggle
+					aria-controls="edc-rail"
+					aria-expanded="false"
+					aria-label="Ouvrir le menu"
+				>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M3 6h18M3 12h18M3 18h18"></path>
+					</svg>
+				</button>
+				<span class="edc-topbar__title">
+					if props.ProjectName != "" {
+						{ props.ProjectName }
+					} else {
+						edecán
+					}
+				</span>
+				<button type="button" class="edc-topbar__theme-toggle" onclick="edcToggleTheme()" aria-label="Changer de thème">
+					<span class="edc-theme-icon--sun">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 6a6 6 0 100 12A6 6 0 0012 6z"></path>
+						</svg>
+					</span>
+					<span class="edc-theme-icon--moon">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+						</svg>
+					</span>
+				</button>
+			</header>
+			<div class="edc-rail-backdrop" data-edc-rail-close aria-hidden="true"></div>
+			<aside class="edc-rail" id="edc-rail">
 				<div class="edc-rail__top">
 					<a class="edc-rail__brand" href="/">
 						<span class="edc-rail__logo">
@@ -77,6 +114,11 @@ templ Shell(props ShellProps) {
 								<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
 							</svg>
 						</span>
+					</button>
+					<button type="button" class="edc-rail__close" data-edc-rail-close aria-label="Fermer le menu">
+						<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M18 6L6 18M6 6l12 12"></path>
+						</svg>
 					</button>
 				</div>
 				if len(props.Projects) > 1 {
